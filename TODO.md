@@ -20,7 +20,7 @@ decision is in `log.md`; the layer design is in `docs/architecture.md`.
 | L5 present | **done** | Kinematic trajectory + BOM doc + plain-language render |
 | Web app | **done** | stdlib server + single page, light/dark. Runs `pipeline.run()` — same L4 gate, record and human gate as `demo.py`. Blocks on the seed catalog by design; `--demo` walks it |
 
-**102 tests passing.** No dependencies — stdlib only.
+**105 tests passing.** No dependencies — stdlib only.
 
 ```bash
 python3 serve.py              # the app -> blocks: no verified parts (correct)
@@ -28,7 +28,7 @@ python3 serve.py 8000 --demo  # walk the flow against placeholder parts
 python3 demo_novice.py    # three novice conversations
 python3 demo_general.py   # topology synthesis across robot types
 python3 demo.py           # full pipeline -> BOM + trajectory
-python3 -m pytest -q          # 102 tests
+python3 -m pytest -q          # 105 tests
 ```
 
 ---
@@ -129,6 +129,9 @@ create. Do not remove it to make a script work.
       `_pick_actuator`, or the extra parts are unreachable.
 - [ ] Link lengths sum to 1.08x the stated reach (0.55 + 0.45 + 0.08 in `topology.py`),
       so the moment arm is ~8% longer than the quoted reach. Decide which is authoritative.
+- [x] ~~Orderable parts list on the result screen~~ — **done 2026-08-28.** `explain.shopping_list()`
+      -> "What to order": qty, plain-English role, manufacturer, part number, price, vendor link.
+      Unverified prices carry a `?`; the subtotal is withheld until the parts are verified.
 - [ ] Real cycle-time video render for L5
 - [ ] Firmware/control code generation — the one layer that can be fully automated (compiler +
       tests + millisecond loop). Not started.

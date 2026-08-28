@@ -88,6 +88,20 @@ li{margin:5px 0}
   border-left:3px solid var(--warn); padding:2px 0 2px 14px;
   color:var(--muted); font-size:14.5px; margin:6px 0;
 }
+.bom{margin-top:10px}
+.bomrow{
+  display:flex; gap:12px; align-items:baseline;
+  padding:9px 0; border-bottom:1px solid var(--line);
+}
+.bomrow .qty{flex:0 0 34px; color:var(--muted); font-variant-numeric:tabular-nums}
+.bomrow .what{flex:1 1 auto}
+.bomrow .pn{font-size:13px; color:var(--muted)}
+.bomrow .pn a{color:var(--accent)}
+.bomrow .cost{flex:0 0 auto; font-variant-numeric:tabular-nums; white-space:nowrap}
+.bomrow.total{border-bottom:none; border-top:1px solid var(--line); font-weight:600}
+.bomrow.total .what{color:var(--muted); font-weight:400}
+.unconf{color:var(--warn); font-weight:700; margin-left:4px}
+@media (max-width:520px){ .bomrow{flex-wrap:wrap} .bomrow .cost{margin-left:46px} }
 .caveats{font-size:14.5px; color:var(--muted); margin-top:26px;
   padding-top:18px; border-top:1px solid var(--line)}
 .caveats li{margin:6px 0}
@@ -186,6 +200,31 @@ function renderResult(r){
     h += `<div class="sec"><h3>What it's made of</h3><ul>`;
     r.parts.forEach(p => h += `<li>${esc(p)}</li>`);
     h += `</ul></div>`;
+  }
+  if(r.shopping_list && r.shopping_list.length){
+    const unconfirmed = r.shopping_list.some(x => !x.confirmed);
+    h += `<div class="sec"><h3>What to order</h3>`;
+    h += `<div class="bom">`;
+    r.shopping_list.forEach(x => {
+      const label = esc(x.order_as || (x.manufacturer + " " + x.part_number));
+      const name = x.url
+        ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+        : label;
+      h += `<div class="bomrow">
+              <span class="qty">${x.qty}&times;</span>
+              <span class="what">${esc(x.what)}<br><span class="pn">${name}</span></span>
+              <span class="cost">$${x.line_usd.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}${x.confirmed ? "" : "<span class=\"unconf\">?</span>"}</span>
+            </div>`;
+    });
+    if(r.parts_subtotal_usd != null)
+      h += `<div class="bomrow total"><span class="qty"></span><span class="what">parts, before building it</span>
+            <span class="cost">$${r.parts_subtotal_usd.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>`;
+    h += `</div>`;
+    if(unconfirmed)
+      h += `<div class="note">Prices marked <b>?</b> came from the supplier's page but
+            nobody here has re-checked them, so treat them as a guide rather than a
+            quote. The part numbers are real — you can order from them today.</div>`;
+    h += `</div>`;
   }
   if(r.gaps && r.gaps.length){
     h += `<div class="sec"><h3>Needs sourcing</h3>`;

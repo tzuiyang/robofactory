@@ -72,6 +72,79 @@ def parts_of_machine(topo: Topology) -> list[str]:
     return out
 
 
+#: BOM role text -> what to call it on a shopping list. The internal roles read
+#: "joint actuator — shoulder", which is exactly the vocabulary the intake spent
+#: five questions avoiding. Anything unmapped falls back to the role text with the
+#: known jargon words swapped out, so a new part kind degrades to clumsy English
+#: rather than to "actuator".
+ROLE_WORDS: dict[str, str] = {
+    "motion controller": "the computer that runs it",
+    "onboard computer": "a second computer, for seeing and listening",
+    "motor driver": "the board that powers the motors",
+    "power supply": "the mains power supply",
+    "home/limit sensor": "a switch that tells it where 'home' is",
+    "end effector": "the gripper on the end",
+    "drive wheel": "a wheel",
+    "battery": "the battery",
+    "camera": "the camera",
+    "microphone array": "the microphones",
+    "speaker": "the speaker",
+    "audio amplifier": "the amplifier that drives the speaker",
+}
+
+_JARGON_SWAPS = [("joint actuator", "motor"), ("actuator", "motor"),
+                 ("end effector", "gripper"), ("effector", "gripper")]
+
+
+def role_words(role: str) -> str:
+    """Plain-English name for one BOM line."""
+    if role in ROLE_WORDS:
+        return ROLE_WORDS[role]
+    text = role
+    for jargon, plain in _JARGON_SWAPS:
+        text = text.replace(jargon, plain)
+    # "motor — shoulder, elbow" reads better as "motor for the shoulder and elbow"
+    if " — " in text:
+        thing, where = text.split(" — ", 1)
+        parts = [w.strip().replace("_", " ") for w in where.split(",")]
+        joined = parts[0] if len(parts) == 1 else (
+            ", ".join(parts[:-1]) + " and " + parts[-1])
+        return f"{thing.strip()} for the {joined}"
+    return text
+
+
+def shopping_list(config: Configuration, tier: str) -> list[dict]:
+    """What to actually order, in the words of someone who has to order it.
+
+    This is the deliverable. A person reading the result screen cannot buy "a
+    rotating shoulder joint" — they need a manufacturer, a part number, a price
+    and a link. Unverified parts still carry their price here, flagged, because
+    withholding it would leave someone with no idea whether the machine is a
+    300 dollar project or a 3,000 dollar one. What they never get is a *total*
+    presented as a quote: that is the line `catalog_verified` draws.
+    """
+    out = []
+    for line in sorted(config.tiers[tier].lines,
+                       key=lambda l: -l.part.price_usd * l.qty):
+        p = line.part
+        # Some vendors put their own name in the part number ("Raspberry Pi 5 /
+        # 8GB"), and "Raspberry Pi Raspberry Pi 5 / 8GB" reads like a bug.
+        order_as = (p.part_number if p.part_number.lower().startswith(
+            p.manufacturer.lower()) else f"{p.manufacturer} {p.part_number}")
+        out.append({
+            "qty": line.qty,
+            "what": role_words(line.role),
+            "manufacturer": p.manufacturer,
+            "part_number": p.part_number,
+            "order_as": order_as,
+            "unit_usd": p.price_usd,
+            "line_usd": round(p.price_usd * line.qty, 2),
+            "url": p.source_url,
+            "confirmed": p.verified,
+        })
+    return out
+
+
 def what_it_can_do(req: Requirements) -> list[str]:
     return [CAPABILITY_WORDS[c.value] for c in sorted(req.capabilities, key=lambda x: x.value)
             if c.value in CAPABILITY_WORDS]

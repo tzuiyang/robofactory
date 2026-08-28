@@ -101,6 +101,7 @@ def test_customer_view_carries_no_engineering_detail(serve_mod, intake,
     customer = " ".join(
         [out["machine"], out["speed"], out["price"] or ""]
         + out["parts"] + out["abilities"] + out["caveats"]
+        + [x["what"] for x in out["shopping_list"]]
     ).lower()
     for word in ("dof", "torque", "nm", "actuator", "kinematic", "revolute"):
         assert word not in customer.split(), f"{word!r} leaked into the customer view"
@@ -220,3 +221,55 @@ def test_cost_is_explained_once_not_twice(serve_mod, intake, tmp_path, monkeypat
         shown = [x for x in (out.get("price"), out.get("price_withheld"),
                              out.get("over_budget")) if x]
         assert len(shown) == 1, f"expected exactly one cost note, got {len(shown)}"
+
+
+def test_the_result_says_what_to_order(serve_mod, intake, verified_catalog,
+                                       tmp_path, monkeypatch):
+    """A person cannot order "a rotating shoulder joint".
+
+    The whole product is a parts list someone can actually buy from. Until now the
+    result screen described the machine in prose and stopped, so the one thing it
+    exists to deliver was the one thing it did not show.
+    """
+    monkeypatch.setattr(serve_mod, "CATALOG", verified_catalog)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    out = serve_mod.result_payload(intake)
+
+    bom = out["shopping_list"]
+    assert bom, "the result must list what to order"
+    for row in bom:
+        assert row["qty"] >= 1
+        assert row["manufacturer"] and row["part_number"], "you order by part number"
+        assert row["order_as"].lower().count(row["manufacturer"].lower()) == 1, (
+            f"manufacturer repeated in the order label: {row['order_as']!r}")
+        assert row["url"], f"{row['part_number']} has no link to buy it from"
+        assert row["line_usd"] == pytest.approx(row["unit_usd"] * row["qty"])
+    assert out["parts_subtotal_usd"] == pytest.approx(
+        sum(r["line_usd"] for r in bom))
+
+
+def test_unverified_parts_are_listed_but_flagged(serve_mod, intake, tmp_path,
+                                                 monkeypatch):
+    """Part numbers and links are facts; unchecked prices are not.
+
+    Showing the list is how someone finds out whether this is a $300 project or a
+    $3,000 one. Showing a *total* as though it were a quote is what
+    `catalog_verified` exists to prevent, so the subtotal is withheld instead.
+    """
+    monkeypatch.setattr(serve_mod, "DEMO_MODE", True)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    out = serve_mod.result_payload(intake)
+
+    assert out["shopping_list"], "the parts are real even when unchecked"
+    assert all(r["confirmed"] is False for r in out["shopping_list"])
+    assert all(r["url"] for r in out["shopping_list"])
+    assert out["parts_subtotal_usd"] is None, "no total from unverified parts"
+    assert out["price"] is None
+
+
+def test_every_catalog_part_can_be_ordered(seed_catalog):
+    """A part with no link is a part nobody can buy. It has no business being in
+    a catalog whose entire purpose is that the output is orderable."""
+    missing = [p.id for p in seed_catalog.query(allow_unverified=True)
+               if not p.source_url]
+    assert not missing, f"no vendor link on: {missing}"

@@ -32,7 +32,8 @@ from rstream.catalog import Catalog
 from rstream.config import MAX_PARTS_COST_USD
 from rstream.dialogue import GuidedIntake, plain_failure
 from rstream.explain import (caveat_lines, describe_machine, parts_of_machine,
-                             price_sentence, speed_sentence, what_it_can_do)
+                             price_sentence, shopping_list, speed_sentence,
+                             what_it_can_do)
 from rstream.pipeline import run as run_pipeline
 from rstream.record import Outcome
 
@@ -156,6 +157,9 @@ def result_payload(g: GuidedIntake) -> dict:
         "price": price_sentence(cfg, tier) if (priced and tier) else None,
         "price_withheld": price_withheld,
         "over_budget": over_budget,
+        # The deliverable. A person cannot order "a rotating shoulder joint".
+        "shopping_list": shopping_list(cfg, tier),
+        "parts_subtotal_usd": round(cfg.tiers[tier].parts_cost_usd, 2) if priced else None,
         "gaps": cfg.capability_gaps,
         "caveats": caveats,
         "demo_mode": DEMO_MODE,

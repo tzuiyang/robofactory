@@ -506,6 +506,31 @@ described is no longer over the ceiling; both docstrings record why.
 derived continuous ratings (DYNAMIXEL stall/5, goBILDA stall/3) — those are engineering
 judgement, flagged in each part's `notes`, and are the first thing to check.
 
+### [2026-08-28] The result screen now says what to order
+**Type:** breakthrough
+**Context:** The team looked at a finished design and said: "still nothing — it should be in
+the app, a normal user won't have access to the repo." They were right, and this had been
+sitting open since the end-to-end test that morning.
+**Finding:** The product is a parts list someone can buy from. The result screen described the
+machine in prose — "a rotating shoulder joint", "an overhead frame that slides in two
+directions" — and stopped. Nobody can order from that. L5 had the BOM the whole time; only the
+rendering was missing, so the one thing the app exists to deliver was the one thing it did not
+show. The catalog work and the `curate.py` reporting were both aimed at the repo, not at the
+person using the app — the same mistake twice.
+**Consequence:** `explain.shopping_list()` returns qty / plain-English role / manufacturer /
+part number / unit and line price / vendor link / confirmed flag, and the screen renders it as
+"What to order" with every part number a clickable link. `ROLE_WORDS` keeps the plain-language
+rule: internal roles read "joint actuator — shoulder", the screen says "motor for the shoulder".
+**Where the line sits:** unverified parts are still *listed*, with prices marked `?`, because
+withholding them leaves someone unable to tell a 300 dollar project from a 3,000 dollar one —
+and the part numbers are facts regardless. What is withheld is the **subtotal**, because a
+total presented as a number is the quote that `catalog_verified` exists to prevent. Pinned by
+`test_unverified_parts_are_listed_but_flagged`.
+**Also added:** `test_every_catalog_part_can_be_ordered` — a part with no `source_url` fails
+the suite. A part nobody can buy has no business in a catalog whose whole purpose is that the
+output is orderable.
+**Confidence:** high — 105 tests, verified in the browser.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1221,3 +1246,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | Fixed: `--demo` blanked the whole result screen. A design whose only failing check is `catalog_verified` now renders in full with the price withheld. 99 tests | The flow can finally be walked end to end without faking verification |
 | 2026-08-28 | Failure presentation fixed: five L4 checks had no plain-language message and fell through to a generic dead end; over-budget and unpriced designs now render in full with the reason. 101 tests | The app explains every refusal in terms the person can act on |
 | 2026-08-28 | Catalog filled with 22 real, linked, orderable parts (still unverified by design). Data: 3k buys 1.0 kg at 0.5 m, not 0.35 m at 0.5 kg; torque not cost is now the binding limit; the 9-48 Nm gap costs ~500 USD on every arm and is why tiers collapse | The catalog is real; only human verification stands between the app and a quote |
+| 2026-08-28 | Result screen renders the orderable parts list: qty, plain-English role, manufacturer, part number, price and a link to buy it. Unverified prices flagged `?`, subtotal withheld. 105 tests | The app finally hands a person the thing the product is for |

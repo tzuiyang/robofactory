@@ -1,0 +1,274 @@
+{
+  "id": "aba34db2685a",
+  "schema_version": 1,
+  "created_at": null,
+  "requirements": {
+    "task": "pick up small parts and drop them in a bin",
+    "payload_kg": 0.085,
+    "reach_m": 0.2,
+    "budget_usd": 3000.0,
+    "environment": "benchtop"
+  },
+  "archetype_id": "scara.tabletop",
+  "sizing": {
+    "required_nm": 9.0805289706,
+    "safety_factor": 2.5,
+    "cycle_s": 2.04,
+    "parts_per_hour": 1764.7058823529412,
+    "joints": [
+      {
+        "label": "shoulder",
+        "module": "joint.revolute",
+        "moment_arm_m": 0.21600000000000003,
+        "distal_mass_kg": 3.1592,
+        "basis": "cantilever",
+        "required_nm": 9.0805289706
+      },
+      {
+        "label": "elbow",
+        "module": "joint.revolute.inline",
+        "moment_arm_m": 0.10600000000000001,
+        "distal_mass_kg": 2.0272,
+        "basis": "cantilever",
+        "required_nm": 2.897738206516667
+      },
+      {
+        "label": "wrist",
+        "module": "joint.revolute.inline",
+        "moment_arm_m": 0.05,
+        "distal_mass_kg": 0.9192,
+        "basis": "cantilever",
+        "required_nm": 0.67248019875
+      }
+    ]
+  },
+  "bom": [
+    {
+      "part_id": "act.j4800",
+      "part_number": "AK80-64 KV80",
+      "qty": 1,
+      "role": "joint actuator \u2014 shoulder",
+      "unit_usd": 989.9,
+      "verified": false
+    },
+    {
+      "part_id": "act.j830",
+      "part_number": "AK70-10 KV100",
+      "qty": 2,
+      "role": "joint actuator \u2014 elbow, wrist",
+      "unit_usd": 398.9,
+      "verified": false
+    },
+    {
+      "part_id": "ctrl.pi5",
+      "part_number": "Raspberry Pi 5 / 8GB",
+      "qty": 1,
+      "role": "motion controller",
+      "unit_usd": 130.0,
+      "verified": false
+    },
+    {
+      "part_id": "drv.mdd10a",
+      "part_number": "MDD10A",
+      "qty": 2,
+      "role": "motor driver",
+      "unit_usd": 35.97,
+      "verified": false
+    },
+    {
+      "part_id": "ee.gripper2f",
+      "part_number": "FIT0300",
+      "qty": 1,
+      "role": "end effector",
+      "unit_usd": 9.0,
+      "verified": false
+    },
+    {
+      "part_id": "psu.150w",
+      "part_number": "LRS-150-24",
+      "qty": 1,
+      "role": "power supply",
+      "unit_usd": 22.87,
+      "verified": false
+    },
+    {
+      "part_id": "sens.limit",
+      "part_number": "D2F-01L",
+      "qty": 3,
+      "role": "home/limit sensor",
+      "unit_usd": 1.44,
+      "verified": false
+    }
+  ],
+  "tiers": {
+    "good": {
+      "parts_usd": 1650.9199999999998,
+      "range_usd": [
+        2440.0,
+        3510.0
+      ]
+    },
+    "best": {
+      "parts_usd": 2025.8299999999997,
+      "range_usd": [
+        2990.0,
+        4300.0
+      ]
+    }
+  },
+  "panel_tier": "M",
+  "geometry_params": {
+    "reach_m": 0.2,
+    "est_mass_kg": 0.325,
+    "z_travel_m": 0.08000000000000002,
+    "link1_m": 0.11000000000000001,
+    "link2_m": 0.09000000000000001
+  },
+  "checks": [
+    {
+      "name": "budget",
+      "status": "warn",
+      "detail": "top of range (4,300) exceeds budget (3,000)",
+      "repair": null
+    },
+    {
+      "name": "cost_target",
+      "status": "pass",
+      "detail": "parts 2,026 / 3,000 USD, sells at 2,990-4,300 / 10,000 USD",
+      "repair": null
+    },
+    {
+      "name": "torque_margin[shoulder]",
+      "status": "pass",
+      "detail": "5.29x rated over 9.1 Nm required at shoulder (SF 2.5x already applied)",
+      "repair": null
+    },
+    {
+      "name": "torque_margin[elbow]",
+      "status": "pass",
+      "detail": "2.86x rated over 2.9 Nm required at elbow (SF 2.5x already applied)",
+      "repair": null
+    },
+    {
+      "name": "torque_margin[wrist]",
+      "status": "pass",
+      "detail": "12.34x rated over 0.7 Nm required at wrist (SF 2.5x already applied)",
+      "repair": null
+    },
+    {
+      "name": "panel_volume",
+      "status": "pass",
+      "detail": "1076 / 2228 cm^3 used",
+      "repair": null
+    },
+    {
+      "name": "panel_largest_part",
+      "status": "pass",
+      "detail": "",
+      "repair": null
+    },
+    {
+      "name": "reach",
+      "status": "pass",
+      "detail": "0.200 m from base (span 0.400 m)",
+      "repair": null
+    },
+    {
+      "name": "interference",
+      "status": "skipped",
+      "detail": "backend 'null' has no B-rep; run on a real CAD backend before quoting",
+      "repair": null
+    },
+    {
+      "name": "catalog_verified",
+      "status": "fail",
+      "detail": "unverified parts cannot be quoted: act.j4800, act.j830, ctrl.pi5, drv.mdd10a, ee.gripper2f, psu.150w, sens.limit",
+      "repair": {
+        "action": "human_verify_parts",
+        "parts": [
+          "act.j4800",
+          "act.j830",
+          "ctrl.pi5",
+          "drv.mdd10a",
+          "ee.gripper2f",
+          "psu.150w",
+          "sens.limit"
+        ]
+      }
+    },
+    {
+      "name": "vision",
+      "status": "skipped",
+      "detail": "no reviewer configured",
+      "repair": null
+    }
+  ],
+  "repair_attempts": 0,
+  "screenshots": [
+    "iso-top-right",
+    "front",
+    "top"
+  ],
+  "stages": [
+    {
+      "stage": "L1_intake",
+      "ok": true,
+      "detail": {
+        "assumptions": [
+          "payload taken as 0.08 kg, estimated from 'lighter than a phone' (0.02-0.15 kg)",
+          "reach taken as 0.20 m, from a working area of 'a laptop'",
+          "the customer has no robotics background; every technical value here was derived from plain-language answers and must be confirmed at review"
+        ]
+      },
+      "messages": []
+    },
+    {
+      "stage": "L2_config",
+      "ok": true,
+      "detail": {
+        "archetype": "scara.tabletop",
+        "tiers": [
+          "good",
+          "best"
+        ]
+      },
+      "messages": []
+    },
+    {
+      "stage": "L3_geometry",
+      "ok": true,
+      "detail": {
+        "panel_tier": "M",
+        "tier": "best",
+        "attempt": 0
+      },
+      "messages": []
+    },
+    {
+      "stage": "L4_validate",
+      "ok": false,
+      "detail": {
+        "summary": "fail=1 pass=7 skipped=1 warn=1",
+        "attempts": 0
+      },
+      "messages": []
+    },
+    {
+      "stage": "L5_present",
+      "ok": true,
+      "detail": {
+        "tier": "best",
+        "range_usd": [
+          2990.0,
+          4300.0
+        ]
+      },
+      "messages": []
+    }
+  ],
+  "outcome": "draft",
+  "engineer_corrections": [],
+  "customer_outcome": null,
+  "quoted_cost_usd": 3645.0,
+  "actual_build_cost_usd": null
+}
