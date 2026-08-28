@@ -171,12 +171,16 @@ def synthesize(
         # tool in a plane; with fewer, the approach angle is whatever the
         # geometry happens to give, which fails on any task needing a specific
         # approach (inserting, stacking, placing into a fixture).
+        # Shares sum to 1.00, so the arm reaches exactly what was quoted. They used
+        # to be 0.55 / 0.45 / 0.08 = 1.08, which over-reached by 8% and made every
+        # moment arm 8% long — and the 0.08 share gave a 28 mm wrist link on a
+        # 0.35 m arm, shorter than the motor driving it and unbuildable.
         _add(topo, "joint.revolute", "shoulder", parent=tip); tip = "shoulder"
-        _add(topo, "link.rigid", "upper_link", parent=tip, length_m=reach_m * 0.55); tip = "upper_link"
+        _add(topo, "link.rigid", "upper_link", parent=tip, length_m=reach_m * 0.50); tip = "upper_link"
         _add(topo, "joint.revolute.inline", "elbow", parent=tip); tip = "elbow"
-        _add(topo, "link.rigid", "fore_link", parent=tip, length_m=reach_m * 0.45); tip = "fore_link"
+        _add(topo, "link.rigid", "fore_link", parent=tip, length_m=reach_m * 0.36); tip = "fore_link"
         _add(topo, "joint.revolute.inline", "wrist", parent=tip); tip = "wrist"
-        _add(topo, "link.rigid", "wrist_link", parent=tip, length_m=reach_m * 0.08); tip = "wrist_link"
+        _add(topo, "link.rigid", "wrist_link", parent=tip, length_m=reach_m * 0.14); tip = "wrist_link"
     elif needs_manip and workspace_is_planar:
         _add(topo, "joint.revolute.inline", "z_axis", parent=tip); tip = "z_axis"
         _add(topo, "link.rigid", "z_column", parent=tip,

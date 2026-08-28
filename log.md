@@ -640,6 +640,40 @@ never ask a vision model to judge what a query can measure, but *do* look at the
 class of error no query is written for.
 **Confidence:** high on both fixes (checked against the joint origins, not the render).
 
+### [2026-08-28] Primitive geometry is the ceiling; real geometry is blocked on a restart
+**Type:** bottleneck
+**Context:** Shown the rendered designs, the team's verdict was "worse than a kid's robotics
+drawing" and asked for real Fusion geometry.
+**Finding — the blocker is mundane and total.** Fusion is running and its MCP server answers
+on `http://127.0.0.1:27182/mcp` (verified: `initialize` returns a valid handshake). The Claude
+session connected before Fusion did, cached `ConnectionRefused`, and never retried, so the
+`fusion_mcp_*` tools are unavailable **for that session only**. A restart fixes it. Nothing is
+wrong with the setup and nothing needs configuring — worth writing down because the error text
+reads like a missing capability and it is not.
+**Finding — most of the ugliness was not CAD, it was invented numbers.** The joint housings
+were 80 mm cubes chosen by nobody, while the catalog has held every actuator's real envelope
+since the parts went in. Drawing each joint as a cylinder at the motor's actual size, on the
+axis it turns about, is both more honest and dramatically better looking. An AK80-64 is 98 mm
+across and 62 mm thick; that is now what it is.
+**Fixed at the same time:** the arm link shares were 0.55 / 0.45 / 0.08 = **1.08**, so every
+arm over-reached what was quoted by 8% and every moment arm was 8% long — a sizing error, not
+just a cosmetic one. Now 0.50 / 0.36 / 0.14 = 1.00, which also takes the wrist link on a 0.35 m
+arm from an unbuildable 28 mm to 49 mm. Supersedes the open TODO item and the URDF reach NOTE,
+which now has nothing to report; the test was inverted to assert the match instead.
+**Built while blocked:** the mesh seam. `export/urdf.py` looks for
+`assets/meshes/<module_id>.obj|stl|dae` and uses it for that link's **visual**, falling back to
+the primitive when absent — so the nine modules can be authored one at a time and every design
+keeps exporting throughout. Collision stays a primitive deliberately: mesh-vs-mesh is slow and
+buys nothing at concept level. Plan in `docs/fusion-modules.md`.
+**Flagged for the team:** the catalog rule is "STEP, not STL" because a mesh has no planar face
+to mate against. That is about catalog parts used for *mating*. A URDF visual mesh is a render
+artifact and cannot be STEP — no simulator reads it. Different uses of "geometry", rule not
+broken, but the distinction needs writing down before someone reads both files and concludes
+otherwise. Proposed: STEP authoritative for mating and panel fit, `.obj` a derived render
+artifact regenerated from it and never hand-edited.
+**Confidence:** high on everything above. The 127 tests include three new ones pinning the mesh
+seam and the actuator-sized housings.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1360,3 +1394,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | Product named **RoboFactory** (provisional). Repo and package unchanged. Strapline now names the deliverable | The app has a name |
 | 2026-08-28 | `check_urdf` accepts all four topology shapes first try; validation wired into the suite as skip-if-absent tests. 123 tests | The URDF export is verified, not just self-checked |
 | 2026-08-28 | Rendered the URDFs and looked at them. Found+fixed: rover wheels buried in the chassis, chassis wider than its track. Found not fixed: the 28 mm wrist link is shorter than the 80 mm joint driving it. `tools/render.py` + `tools/view.py` added | A parser proves well-formed, not correct — looking is a separate check |
+| 2026-08-28 | Joint housings drawn at the real motor envelope as cylinders; arm link shares fixed 1.08 -> 1.00 (an 8% sizing error, not just cosmetic); mesh seam + `docs/fusion-modules.md` built ready for Fusion. 127 tests | Primitives are as good as they get; real geometry needs a restart |

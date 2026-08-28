@@ -20,7 +20,7 @@ decision is in `log.md`; the layer design is in `docs/architecture.md`.
 | L5 present | **done** | Kinematic trajectory + BOM doc + plain-language render |
 | Web app | **done** | stdlib server + single page, light/dark. Runs `pipeline.run()` — same L4 gate, record and human gate as `demo.py`. Blocks on the seed catalog by design; `--demo` walks it |
 
-**123 tests passing.** No dependencies — stdlib only.
+**127 tests passing.** No dependencies — stdlib only.
 
 ```bash
 python3 serve.py              # the app -> blocks: no verified parts (correct)
@@ -140,8 +140,11 @@ create. Do not remove it to make a script work.
       that joint. **Verified with `check_urdf` (urdfdom) 2026-08-28** — arm, rover, mobile
       manipulator and vacuum arm all parse first try. Wired into the suite as skip-if-absent
       tests. Next: actually launch one in `gz sim` or Isaac and watch it move.
-- [ ] Replace the primitive `<geometry>` boxes with meshes once the Fusion module templates
-      exist. Same URDF, better picture — and the concrete payoff for authoring the CAD.
+- [ ] **Author the 9 Fusion modules** — plan in `docs/fusion-modules.md`. The mesh seam is
+      already built: drop `assets/meshes/<module_id>.obj` in and that link's visual becomes a
+      mesh, with the primitive as fallback, so modules can land one at a time.
+      **Blocked on a Claude Code restart** — the Fusion MCP server is up on port 27182 but the
+      session connected before Fusion did.
 - [ ] Turn `interference` from SKIPPED into a real check by collision-testing the URDF
       (pybullet or trimesh). Needs a dependency, which breaks stdlib-only — log the decision.
 - [ ] Real cycle-time video render for L5

@@ -30,10 +30,20 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from pathlib import Path
 from xml.dom import minidom
 
 from ..config import Configuration
 from ..modules import ModuleKind
+
+#: Where per-module geometry exported from the CAD backend lands. A module with a
+#: mesh here is drawn with it; one without falls back to a primitive, so the
+#: pipeline never blocks on CAD that has not been authored yet.
+MESH_DIR = Path(__file__).resolve().parents[3] / "assets" / "meshes"
+#: URDF `package://` prefix. ROS resolves it; Gazebo, PyBullet and the Isaac
+#: importer all accept a plain relative path too, which is why the file also
+#: carries the mesh directory in its header.
+MESH_URI = "package://rstream/meshes"
 
 #: Minimum box edge, metres. A zero-length link would give a zero inertia tensor,
 #: which most simulators accept and then behave strangely around.
@@ -49,11 +59,20 @@ class URDFError(RuntimeError):
 @dataclass
 class _Link:
     name: str
+    #: "box" -> size is (x, y, z). "cylinder" -> size is (radius, length, 0).
+    shape: str
     size: tuple[float, float, float]
     mass_kg: float
-    #: Offset of the box centre from the link origin. Links grow along one axis
+    #: Offset of the shape centre from the link origin. Links grow along one axis
     #: from their mount face, so the centre is half the extent along that axis.
     centre: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    #: A URDF cylinder runs along +Z. Anything spinning about +Y needs turning.
+    rpy: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    #: Authored geometry for this link, if the CAD backend has exported any.
+    #: Used for `visual` only — `collision` stays a primitive, because a
+    #: collision check against a detailed mesh is slow and buys nothing at
+    #: concept level.
+    mesh: str | None = None
 
 
 @dataclass
@@ -70,11 +89,42 @@ class _Joint:
     velocity: float = 0.0
 
 
-def _box_inertia(mass: float, size: tuple[float, float, float]) -> tuple[float, float, float]:
-    """Principal inertias of a uniform box. Concept-level and stated as such."""
-    x, y, z = (max(v, MIN_EDGE_M) for v in size)
-    c = mass / 12.0
+#: Rotate +Z onto +Y, so a cylinder lies along the pitch axis every joint uses.
+_Y_AXIS_RPY = (1.5707963, 0.0, 0.0)
+
+
+def _inertia(link: _Link) -> tuple[float, float, float]:
+    """Principal inertias of a uniform primitive. Concept-level and stated as such."""
+    m = link.mass_kg
+    if link.shape == "cylinder":
+        r, h = max(link.size[0], MIN_EDGE_M), max(link.size[1], MIN_EDGE_M)
+        radial = m * (3 * r * r + h * h) / 12.0
+        return (radial, radial, m * r * r / 2.0)
+    x, y, z = (max(v, MIN_EDGE_M) for v in link.size)
+    c = m / 12.0
     return (c * (y * y + z * z), c * (x * x + z * z), c * (x * x + y * y))
+
+
+def _mesh_for(module_id: str) -> str | None:
+    """Authored geometry for a module, if any has been exported."""
+    for ext in (".obj", ".stl", ".dae"):
+        if (MESH_DIR / f"{module_id.replace('.', '_')}{ext}").is_file():
+            return f"{MESH_URI}/{module_id.replace('.', '_')}{ext}"
+    return None
+
+
+def _housing(part) -> tuple[float, float]:
+    """(radius, length) of a joint housing, from the motor's own envelope.
+
+    The catalog carries every actuator's real dimensions, so there is no reason
+    to draw an invented cube. The rotating face is the larger cross-section; the
+    remaining dimension is how thick the unit is along its own axis. An AK80-64
+    comes out 98 mm across and 62 mm thick, which is what it is.
+    """
+    d = part.dimensions
+    across = max(d.length_mm, d.width_mm) / 1000.0
+    along = min(d.length_mm, d.width_mm, d.height_mm) / 1000.0
+    return (across / 2.0, max(along, MIN_EDGE_M))
 
 
 #: Wheel width, metres. Sets how far outboard of the chassis a wheel sits.
@@ -185,7 +235,19 @@ def _build(config: Configuration, tier: str) -> tuple[list[_Link], list[_Joint],
             # The motor is bolted to the joint it drives; its mass belongs there,
             # not spread over the arm.
             mass += part.mass_kg
-        links.append(_Link(inst.label, size, max(mass, MIN_MASS_KG), _centre_of(inst)))
+
+        if f.joint == "revolute" and part is not None:
+            # Draw the motor that is actually there, at its actual size, lying on
+            # the axis it turns about. The 80 mm cube this replaces was invented,
+            # and on a small arm it dwarfed the links it was joining.
+            r, h = _housing(part)
+            links.append(_Link(inst.label, "cylinder", (r, h, 0.0),
+                               max(mass, MIN_MASS_KG), _centre_of(inst), _Y_AXIS_RPY,
+                               _mesh_for(inst.module.id)))
+        else:
+            links.append(_Link(inst.label, "box", size,
+                               max(mass, MIN_MASS_KG), _centre_of(inst), (0.0, 0.0, 0.0),
+                               _mesh_for(inst.module.id)))
 
         if inst is root:
             continue
@@ -240,7 +302,8 @@ def _expand_diffdrive(inst, actuators, links, joints):
     # is. Placing them at z=0 put the axle on the floor and sank the robot.
     for side, sign in (("left", 1.0), ("right", -1.0)):
         name = f"{inst.label}_wheel_{side}"
-        links.append(_Link(name, (dia, WHEEL_WIDTH_M, dia), max(mass, MIN_MASS_KG)))
+        links.append(_Link(name, "cylinder", (dia / 2.0, WHEEL_WIDTH_M, 0.0),
+                           max(mass, MIN_MASS_KG), (0.0, 0.0, 0.0), _Y_AXIS_RPY))
         joints.append(_Joint(f"{inst.label}_to_{name}", "continuous",
                              inst.label, name,
                              (0.0, sign * (track / 2.0), dia / 2.0),
@@ -319,19 +382,29 @@ def _xml(links, joints, name, header) -> str:
 
     for l in links:
         link = ET.SubElement(robot, "link", {"name": l.name})
-        origin = {"xyz": " ".join(f"{v:.6f}" for v in l.centre), "rpy": "0 0 0"}
-        size = " ".join(f"{v:.6f}" for v in l.size)
+        origin = {"xyz": " ".join(f"{v:.6f}" for v in l.centre),
+                  "rpy": " ".join(f"{v:.6f}" for v in l.rpy)}
+
+        def add_geometry(parent, allow_mesh=True):
+            geom = ET.SubElement(parent, "geometry")
+            if allow_mesh and l.mesh:
+                ET.SubElement(geom, "mesh", {"filename": l.mesh})
+            elif l.shape == "cylinder":
+                ET.SubElement(geom, "cylinder",
+                              {"radius": f"{l.size[0]:.6f}", "length": f"{l.size[1]:.6f}"})
+            else:
+                ET.SubElement(geom, "box",
+                              {"size": " ".join(f"{v:.6f}" for v in l.size)})
 
         for tag in ("visual", "collision"):
             node = ET.SubElement(link, tag)
             ET.SubElement(node, "origin", origin)
-            geom = ET.SubElement(node, "geometry")
-            ET.SubElement(geom, "box", {"size": size})
+            add_geometry(node, allow_mesh=(tag == "visual"))
 
         inertial = ET.SubElement(link, "inertial")
         ET.SubElement(inertial, "origin", origin)
         ET.SubElement(inertial, "mass", {"value": f"{l.mass_kg:.6f}"})
-        ixx, iyy, izz = _box_inertia(l.mass_kg, l.size)
+        ixx, iyy, izz = _inertia(l)
         ET.SubElement(inertial, "inertia", {
             "ixx": f"{ixx:.8f}", "ixy": "0", "ixz": "0",
             "iyy": f"{iyy:.8f}", "iyz": "0", "izz": f"{izz:.8f}"})
@@ -365,6 +438,7 @@ def urdf_document(config: Configuration, tier: str, name: str = "concept") -> st
         notes.append(reach)
 
     dof = sum(1 for j in joints if j.kind != "fixed")
+    meshed = sum(1 for l in links if l.mesh)
     lines = [
         "CONCEPT MODEL — generated, not engineered.",
         "",
@@ -373,8 +447,18 @@ def urdf_document(config: Configuration, tier: str, name: str = "concept") -> st
         "the sized design. Joint effort and velocity limits are the rated figures of",
         "the actuators actually selected from the catalog.",
         "",
-        "Dynamically approximate: every link is a uniform box, so inertia tensors are",
-        "shape estimates, not measurements. No friction, damping or contact tuning.",
+        (f"Shapes: {meshed} of {len(links)} links use authored CAD geometry; the rest are"
+         if meshed else "Shapes: every link is a primitive —"),
+        ("primitives. Joint housings are drawn at the real envelope of the motor selected"
+         if meshed else "a box, or a cylinder at the real envelope of the motor selected"),
+        "for that joint. Collision shapes are always primitives, on purpose: a mesh-vs-mesh",
+        "check is slow and buys nothing at concept level.",
+        "",
+        (f"Meshes resolve from {MESH_URI}/ — on disk at assets/meshes/."
+         if meshed else "No authored CAD yet; run the geometry backend to replace these."),
+        "",
+        "Dynamically approximate: inertia tensors are computed from those primitives, so",
+        "they are shape estimates, not measurements. No friction, damping or contact tuning.",
         "",
         "Loading this in a simulator verifies reach, envelope and collision-free",
         "motion. It verifies nothing about tolerance stack-up, assembly, wiring,",

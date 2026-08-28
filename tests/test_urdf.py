@@ -135,11 +135,46 @@ def test_a_wheeled_base_gets_both_wheels(rover_cfg):
     assert ys[0] == pytest.approx(-ys[1]), "wheels must straddle the chassis"
 
 
-def test_reach_discrepancy_is_reported_not_hidden(arm_cfg):
-    """Link lengths sum to ~1.08x the quoted reach (TODO.md). Anyone measuring
-    the model has to be told before they measure."""
+def test_the_model_reaches_exactly_what_was_quoted(arm_cfg):
+    """Link shares sum to 1.00. They used to sum to 1.08, so the model reached 8%
+    further than the arm we priced, and every moment arm was 8% long.
+
+    The exporter reports any mismatch as a NOTE rather than hiding it, so this
+    asserts on the absence of that note — if the split ever drifts again, the file
+    will say so and this test will catch it.
+    """
     doc = urdf_document(arm_cfg, "good")
-    assert "quoted reach" in doc
+    assert "quoted reach" not in doc, (
+        "the model no longer matches the quoted reach:\n"
+        + next(l for l in doc.splitlines() if "quoted reach" in l))
+
+    quoted = arm_cfg.geometry_params["reach_m"]
+    reached = sum(i.params["length_m"] for i in arm_cfg.topology.instances
+                  if i.module.kind is ModuleKind.LINK)
+    assert reached == pytest.approx(quoted, abs=1e-6)
+
+
+def test_no_link_is_shorter_than_the_motor_driving_it(arm_cfg):
+    """A 28 mm wrist link between two 50 mm actuators cannot be built. It was
+    what the old 0.08 reach share produced, and it looked exactly as wrong as it
+    was the moment anyone rendered it."""
+    actuators = {}
+    for line in arm_cfg.tiers["good"].lines:
+        if line.part.actuator:
+            for label in line.joints:
+                actuators[label] = line.part
+
+    by_label = {i.label: i for i in arm_cfg.topology.instances}
+    for inst in arm_cfg.topology.instances:
+        if inst.module.kind is not ModuleKind.LINK:
+            continue
+        driver = actuators.get(by_label[inst.parent].label) if inst.parent else None
+        if driver is None:
+            continue
+        along = driver.dimensions.length_mm / 1000.0
+        assert inst.params["length_m"] >= along * 0.5, (
+            f"{inst.label} is {inst.params['length_m'] * 1000:.0f} mm, driven by a "
+            f"{driver.part_number} that is {driver.dimensions.length_mm:.0f} mm long")
 
 
 def test_a_mobile_base_is_not_judged_on_reach(rover_cfg):
@@ -221,3 +256,51 @@ def test_gazebos_own_parser_accepts_a_mobile_manipulator(verified_catalog, tmp_p
     out = _check_urdf(urdf_document(cfg, "good", "mm"), tmp_path, "mm")
     assert "root Link: drive_base" in out
     assert "end_effector" in out
+
+
+# --- the seam authored CAD drops into --------------------------------------
+
+def test_authored_meshes_replace_the_primitive(arm_cfg, monkeypatch, tmp_path):
+    """A module with exported CAD is drawn with it; one without falls back to a
+    primitive, so the pipeline never blocks on geometry nobody has authored yet.
+    """
+    from rstream.export import urdf as U
+
+    monkeypatch.setattr(U, "MESH_DIR", tmp_path)
+    assert "<mesh" not in urdf_document(arm_cfg, "good"), "nothing authored yet"
+
+    (tmp_path / "link_rigid.obj").write_text("# placeholder")
+    doc = urdf_document(arm_cfg, "good")
+    assert "<mesh" in doc and "link_rigid.obj" in doc
+
+
+def test_collision_stays_a_primitive_even_with_a_mesh(arm_cfg, monkeypatch, tmp_path):
+    """Mesh-vs-mesh collision is slow and buys nothing at concept level."""
+    from rstream.export import urdf as U
+
+    monkeypatch.setattr(U, "MESH_DIR", tmp_path)
+    (tmp_path / "link_rigid.obj").write_text("# placeholder")
+    r = ET.fromstring(urdf_document(arm_cfg, "good"))
+
+    link = next(l for l in r.findall("link") if l.get("name") == "upper_link")
+    assert link.find("visual/geometry/mesh") is not None
+    assert link.find("collision/geometry/mesh") is None
+    assert link.find("collision/geometry/box") is not None
+
+
+def test_joint_housings_are_the_size_of_the_real_motor(arm_cfg):
+    """The 80 mm cube these replaced was invented, and on a small arm it dwarfed
+    the links it was joining."""
+    chosen = {}
+    for line in arm_cfg.tiers["good"].lines:
+        if line.part.actuator:
+            for label in line.joints:
+                chosen[label] = line.part
+
+    r = ET.fromstring(urdf_document(arm_cfg, "good"))
+    for label, part in chosen.items():
+        link = next(l for l in r.findall("link") if l.get("name") == label)
+        cyl = link.find("visual/geometry/cylinder")
+        assert cyl is not None, f"{label} should be drawn as the motor, on its axis"
+        across = max(part.dimensions.length_mm, part.dimensions.width_mm) / 1000.0
+        assert float(cyl.get("radius")) == pytest.approx(across / 2.0)
