@@ -110,28 +110,35 @@ def result_payload(g: GuidedIntake) -> dict:
                 "demo_mode": DEMO_MODE}
 
     caveats = caveat_lines()
+    low, high = cfg.tiers[tier].price_range_usd()
+    stated = f"${req.budget_usd:,.0f}"
+    over = "budget" in failed_names
+
+    # One box, not two. Both of these are answers to "what does it cost?", and
+    # stacking them made the screen say "we can't price this" twice in a row.
     price_withheld = None
-    if not priced:
+    over_budget = None
+    if not priced and over:
+        price_withheld = (
+            f"We can't put a price on this yet — the parts haven't been checked "
+            f"against a supplier. Our rough figure is already above the {stated} you "
+            "mentioned, so expect this one to come in over budget. The design itself "
+            "is real."
+        )
+    elif not priced:
         price_withheld = (
             "We can't put a price on this yet. The parts behind it haven't been "
             "checked against a supplier, and we won't quote a number we can't stand "
             "behind. The design itself is real."
         )
-
-    # Over the budget they named. Not a failure of the design — say so plainly and
-    # give them the lever, rather than a screen that reads "we can't build this".
-    over_budget = None
-    if "budget" in failed_names:
-        low, high = cfg.tiers[tier].price_range_usd()
-        stated = f"${req.budget_usd:,.0f}"
+    elif over:
+        # Over the budget they named. Not a failure of the design — say so plainly
+        # and give them the lever, rather than a screen reading "we can't build this".
         over_budget = (
             f"This comes to about ${low:,.0f}-${high:,.0f} — above the {stated} you "
             "mentioned. It is a real machine at that price; nothing here is padding. "
             "Handling a lighter item or working across a smaller area is what brings "
             "the number down."
-            if priced else
-            f"Our rough figure for this is already above the {stated} you mentioned, "
-            "and we can't be precise until the parts are confirmed with a supplier."
         )
     if DEMO_MODE:
         caveats = ["DEMO MODE: this design was built from placeholder parts. Nothing "

@@ -194,3 +194,28 @@ def test_every_blocking_check_has_plain_language(serve_mod):
     ]
     unmapped = [m for m in samples if plain_failure(m) == generic]
     assert not unmapped, f"these blocking failures have no plain-language message: {unmapped}"
+
+
+def test_cost_is_explained_once_not_twice(serve_mod, intake, tmp_path, monkeypatch):
+    """Both notes answer "what does it cost?". Stacked, the screen said "we can't
+    price this" twice in a row."""
+    monkeypatch.setattr(serve_mod, "DEMO_MODE", True)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    for answers in (
+        [("task", "fold laundry"), ("object", "t-shirt"),
+         ("weight_refine", "lighter than a phone"), ("area", "a dining table"),
+         ("budget", "under $3,000"), ("confirm", "yes, that's right")],
+        [("task", "pick up small parts and put them in a bin"),
+         ("object", "machined part"), ("weight_refine", "lighter than a phone"),
+         ("area", "a laptop"), ("budget", "under $3,000"),
+         ("confirm", "yes, that's right")],
+    ):
+        g = GuidedIntake()
+        for k, v in answers:
+            g.answer(k, v)
+        out = serve_mod.result_payload(g)
+        if not out.get("ok"):
+            continue
+        shown = [x for x in (out.get("price"), out.get("price_withheld"),
+                             out.get("over_budget")) if x]
+        assert len(shown) == 1, f"expected exactly one cost note, got {len(shown)}"

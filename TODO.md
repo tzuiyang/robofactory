@@ -20,7 +20,7 @@ decision is in `log.md`; the layer design is in `docs/architecture.md`.
 | L5 present | **done** | Kinematic trajectory + BOM doc + plain-language render |
 | Web app | **done** | stdlib server + single page, light/dark. Runs `pipeline.run()` — same L4 gate, record and human gate as `demo.py`. Blocks on the seed catalog by design; `--demo` walks it |
 
-**101 tests passing.** No dependencies — stdlib only.
+**102 tests passing.** No dependencies — stdlib only.
 
 ```bash
 python3 serve.py              # the app -> blocks: no verified parts (correct)
@@ -28,7 +28,7 @@ python3 serve.py 8000 --demo  # walk the flow against placeholder parts
 python3 demo_novice.py    # three novice conversations
 python3 demo_general.py   # topology synthesis across robot types
 python3 demo.py           # full pipeline -> BOM + trajectory
-python3 -m pytest -q          # 101 tests
+python3 -m pytest -q          # 102 tests
 ```
 
 ---
