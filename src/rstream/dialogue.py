@@ -335,6 +335,31 @@ PLAIN_FAILURES: list[tuple[str, str]] = [
      "This one comes out more expensive than the machines we build. Something "
      "a bit smaller, or handling a lighter item, brings it back into range — "
      "and those are usually the two easiest things to change."),
+    # L4 check failures reach here as "<check_name>: <detail>". Every check that
+    # can blank the result screen needs an entry, or the person gets the generic
+    # fallback, which tells them nothing they can act on. Pinned by a test.
+    ("ceiling for a machine we build",
+     "This one comes out more expensive than the machines we build. Something "
+     "a bit smaller, or handling a lighter item, brings it back into range — "
+     "and those are usually the two easiest things to change."),
+    ("usd ceiling",
+     "This one comes out more expensive than the machines we build. Something "
+     "a bit smaller, or handling a lighter item, brings it back into range — "
+     "and those are usually the two easiest things to change."),
+    ("model reaches",
+     "We couldn't get the machine to cover the whole area you described. A "
+     "smaller working area is the easiest thing to change here."),
+    ("torque_margin",
+     "The motors we'd need for this are past what we stock. A lighter item, or "
+     "a shorter reach, brings it back into range."),
+    ("does not fit the tier",
+     "The electronics for this don't fit in any of our standard control boxes. "
+     "That usually means the machine is doing more than one job at once — tell "
+     "us which one matters most."),
+    ("tier provides",
+     "The electronics for this don't fit in any of our standard control boxes. "
+     "That usually means the machine is doing more than one job at once — tell "
+     "us which one matters most."),
     ("no archetype covers",
      "This is bigger than the machines we build. We'd rather tell you now than "
      "quote something we haven't proven."),

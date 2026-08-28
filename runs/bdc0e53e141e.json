@@ -1,0 +1,48 @@
+{
+  "id": "bdc0e53e141e",
+  "schema_version": 1,
+  "created_at": null,
+  "requirements": {
+    "task": "move engine blocks around a workshop",
+    "payload_kg": 15.0,
+    "reach_m": 3.0,
+    "budget_usd": 3000.0,
+    "environment": "benchtop"
+  },
+  "archetype_id": null,
+  "sizing": {},
+  "bom": [],
+  "tiers": {},
+  "panel_tier": null,
+  "geometry_params": {},
+  "checks": [],
+  "repair_attempts": 0,
+  "screenshots": [],
+  "stages": [
+    {
+      "stage": "L1_intake",
+      "ok": true,
+      "detail": {
+        "assumptions": [
+          "payload taken as 15.00 kg, estimated from 'heavier than that' (5-25 kg)",
+          "reach taken as 3.00 m, from a working area of 'a garage'",
+          "the customer has no robotics background; every technical value here was derived from plain-language answers and must be confirmed at review"
+        ]
+      },
+      "messages": []
+    },
+    {
+      "stage": "L2_config",
+      "ok": false,
+      "detail": {},
+      "messages": [
+        "no archetype covers payload 15.0 kg at reach 3.0 m. This is outside what we build \u2014 say so rather than designing something untested."
+      ]
+    }
+  ],
+  "outcome": "rejected_infeasible",
+  "engineer_corrections": [],
+  "customer_outcome": null,
+  "quoted_cost_usd": null,
+  "actual_build_cost_usd": null
+}

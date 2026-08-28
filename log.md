@@ -442,6 +442,26 @@ record says so. Styled deliberately unlike a price so it cannot be misread as on
 **Confidence:** high — 99 tests, two of them pinning that only the verification failure gets
 this treatment.
 
+### [2026-08-28] "Not quite buildable" was answering the wrong question
+**Type:** breakthrough
+**Context:** A `fold laundry` request came back as "We can't build this one as described" —
+the generic fallback. The record showed the design was fine: it failed `budget` (quoted
+3,870-5,570 against a 3,000 budget) and `catalog_verified`. Nothing was wrong with the machine.
+**Finding:** Two separate faults, both in how failure is presented.
+(1) L4 check failures reach the customer screen as `"<check>: <detail>"`, and `PLAIN_FAILURES`
+had needles for L2 error strings, not for those. `cost_target`, `reach`, `torque_margin`,
+`panel_volume` and `panel_largest_part` all fell through to the generic sentence — every
+cost-ceiling rejection since the ceiling was added has been unactionable.
+(2) More important: **the budget is a number the person told us, not a law of physics.** A
+machine that costs $900 more than they hoped is a real machine, and the price is the single
+most useful thing we can tell them. Blanking the screen was a lie of presentation.
+**Consequence:** `SHOW_DESIGN_ANYWAY = {"budget", "catalog_verified"}` in `serve.py` — those
+two failures render the full design with a note (the number if we know it, the reason if we
+do not); every other failure still blanks it, because for those we genuinely would not build
+the machine. Plain-language entries added for all five unmapped checks, pinned by
+`test_every_blocking_check_has_plain_language`.
+**Confidence:** high — 101 tests; the three outcome classes verified through the running app.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1155,3 +1175,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | Acted on the ETE findings: web app rewired onto `pipeline.run()` with the fake `verified` override removed and a labelled `--demo` flag; `ActuatorRole` added as a hard selection filter; unverified-vs-unavailable now reported distinctly. 97 tests. Lost: `runs/` cleared by an overbroad rm | The app users touch is now the pipeline; catalog verification is the only thing standing between it and a quote |
 | 2026-08-28 | `curate.py` added (status / needs / verify / add); repo put under git. Data: the sizing demands a 7-15 Nm joint rung the seed ladder does not have | The human catalog step is now a guided 4-command loop, not a JSON edit |
 | 2026-08-28 | Fixed: `--demo` blanked the whole result screen. A design whose only failing check is `catalog_verified` now renders in full with the price withheld. 99 tests | The flow can finally be walked end to end without faking verification |
+| 2026-08-28 | Failure presentation fixed: five L4 checks had no plain-language message and fell through to a generic dead end; over-budget and unpriced designs now render in full with the reason. 101 tests | The app explains every refusal in terms the person can act on |

@@ -38,6 +38,15 @@ from rstream.record import Outcome
 
 HERE = Path(__file__).parent
 RUNS_DIR = HERE / "runs"
+
+#: Failing L4 checks the person should see the design *in spite of*.
+#:
+#: `budget` is the number they told us, not a law of physics — the machine is
+#: real, it just costs more than they hoped, and that is the single most useful
+#: thing we can tell them. `catalog_verified` blocks the price, not the design.
+#: Every other failure means we would not build the machine, and showing a design
+#: screen for it would be a lie of presentation.
+SHOW_DESIGN_ANYWAY = {"budget", "catalog_verified"}
 SESSIONS: dict[str, GuidedIntake] = {}
 
 CATALOG = Catalog.load()
@@ -88,11 +97,11 @@ def result_payload(g: GuidedIntake) -> dict:
     # and the more useful answer; blanking the whole screen taught the person
     # nothing and read as "we can't build this", which was false.
     failures = [c for c in rec.checks if c["status"] == "fail"]
-    only_unpriceable = bool(failures) and all(
-        c["name"] == "catalog_verified" for c in failures)
-    priced = rec.outcome is Outcome.AWAITING_REVIEW
+    failed_names = {c["name"] for c in failures}
+    showable = bool(failures) and failed_names <= SHOW_DESIGN_ANYWAY
+    priced = "catalog_verified" not in failed_names
 
-    if not priced and not only_unpriceable:
+    if not (rec.outcome is Outcome.AWAITING_REVIEW or showable):
         return {"done": True, "ok": False,
                 "message": plain_failure(result.blocked_on[0] if result.blocked_on else ""),
                 "summary": g.summary(), "record_id": rec.id,
@@ -108,6 +117,22 @@ def result_payload(g: GuidedIntake) -> dict:
             "checked against a supplier, and we won't quote a number we can't stand "
             "behind. The design itself is real."
         )
+
+    # Over the budget they named. Not a failure of the design — say so plainly and
+    # give them the lever, rather than a screen that reads "we can't build this".
+    over_budget = None
+    if "budget" in failed_names:
+        low, high = cfg.tiers[tier].price_range_usd()
+        stated = f"${req.budget_usd:,.0f}"
+        over_budget = (
+            f"This comes to about ${low:,.0f}-${high:,.0f} — above the {stated} you "
+            "mentioned. It is a real machine at that price; nothing here is padding. "
+            "Handling a lighter item or working across a smaller area is what brings "
+            "the number down."
+            if priced else
+            f"Our rough figure for this is already above the {stated} you mentioned, "
+            "and we can't be precise until the parts are confirmed with a supplier."
+        )
     if DEMO_MODE:
         caveats = ["DEMO MODE: this design was built from placeholder parts. Nothing "
                    "here has been checked against a vendor."] + caveats
@@ -122,6 +147,7 @@ def result_payload(g: GuidedIntake) -> dict:
         "speed": speed_sentence(cfg),
         "price": price_sentence(cfg, tier) if (priced and tier) else None,
         "price_withheld": price_withheld,
+        "over_budget": over_budget,
         "gaps": cfg.capability_gaps,
         "caveats": caveats,
         "demo_mode": DEMO_MODE,

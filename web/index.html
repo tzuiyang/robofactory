@@ -175,6 +175,7 @@ function renderResult(r){
   if(r.speed) h += `<div class="stat"><span class="ico">⏱</span><div>${esc(r.speed)}</div></div>`;
   if(r.price) h += `<div class="stat"><span class="ico">◆</span><div>${esc(r.price)}</div></div>`;
   else if(r.price_withheld) h += `<div class="stat warnstat"><span class="ico">◆</span><div>${esc(r.price_withheld)}</div></div>`;
+  if(r.over_budget) h += `<div class="stat warnstat"><span class="ico">▲</span><div>${esc(r.over_budget)}</div></div>`;
 
   if(r.abilities && r.abilities.length){
     h += `<div class="sec"><h3>What it can do</h3><ul>`;

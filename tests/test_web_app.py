@@ -144,3 +144,53 @@ def test_a_real_failure_still_blanks_the_result(serve_mod, tmp_path, monkeypatch
     assert out["ok"] is False
     assert "price" not in out or out["price"] is None
     assert out["message"]
+
+
+def test_over_budget_design_is_shown_with_its_price(serve_mod, verified_catalog,
+                                                    tmp_path, monkeypatch):
+    """A machine that costs more than the person hoped is still a real machine.
+
+    The budget is a number they told us, not a law of physics. "Not quite
+    buildable" was the wrong answer to "this costs $3,900" — it is buildable, and
+    the price is the single most useful thing we can say.
+    """
+    monkeypatch.setattr(serve_mod, "CATALOG", verified_catalog)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    g = GuidedIntake()
+    for k, v in [("task", "fold laundry"), ("object", "t-shirt"),
+                 ("weight_refine", "lighter than a phone"), ("area", "a dining table"),
+                 ("budget", "under $3,000"), ("confirm", "yes, that's right")]:
+        g.answer(k, v)
+    out = serve_mod.result_payload(g)
+
+    failed = {c["name"] for c in out["internal"]["checks"] if c["status"] == "fail"}
+    assert failed == {"budget"}, f"expected only the budget check to fail, got {failed}"
+    assert out["ok"] is True
+    assert out["machine"]
+    assert out["over_budget"] and "3,000" in out["over_budget"]
+    assert out["price"], "we know the number here, so we say it"
+
+
+def test_every_blocking_check_has_plain_language(serve_mod):
+    """No blocking path may fall through to the generic 'we can't build this'.
+
+    That fallback tells the person nothing they can act on, and it fired on a
+    laundry-folding request whose only problem was that it cost $900 too much.
+    """
+    from rstream.dialogue import plain_failure
+
+    generic = plain_failure("something with no mapping at all")
+    samples = [
+        "cost_target: parts cost 3,104 USD exceeds the 3,000 USD ceiling for a "
+        "machine we build",
+        "cost_target: top of the quoted range (12,000 USD) exceeds the 10,000 USD ceiling",
+        "reach: model reaches 0.300 m from base, requirement 0.700 m",
+        "torque_margin[shoulder]: 0.80x rated over 90.0 Nm required at shoulder",
+        "panel_volume: components need 4000 cm^3 (keepout incl.), tier provides "
+        "2228 cm^3 usable at 55% packing",
+        "panel_largest_part: largest component envelope (300, 100, 90) mm does not "
+        "fit the tier",
+        "catalog_verified: unverified parts cannot be quoted: act.large",
+    ]
+    unmapped = [m for m in samples if plain_failure(m) == generic]
+    assert not unmapped, f"these blocking failures have no plain-language message: {unmapped}"

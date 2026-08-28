@@ -1,0 +1,246 @@
+{
+  "id": "a44007163597",
+  "schema_version": 1,
+  "created_at": null,
+  "requirements": {
+    "task": "fold laundry",
+    "payload_kg": 0.35,
+    "reach_m": 0.7,
+    "budget_usd": 3000.0,
+    "environment": "benchtop"
+  },
+  "archetype_id": "arm.3dof",
+  "sizing": {
+    "required_nm": 6.587390623333333,
+    "safety_factor": 2.5,
+    "cycle_s": 3.6399999999999997,
+    "parts_per_hour": 989.0109890109891,
+    "joints": [
+      {
+        "label": "gantry",
+        "module": "base.gantry",
+        "moment_arm_m": 0.0,
+        "distal_mass_kg": 0.0,
+        "basis": "unmodelled",
+        "required_nm": null
+      },
+      {
+        "label": "z_axis",
+        "module": "joint.revolute.inline",
+        "moment_arm_m": 0.27999999999999997,
+        "distal_mass_kg": 1.1360000000000001,
+        "basis": "cantilever",
+        "required_nm": 6.587390623333333
+      }
+    ]
+  },
+  "bom": [
+    {
+      "part_id": "act.large",
+      "part_number": "PLACEHOLDER-ACT-L",
+      "qty": 3,
+      "role": "joint actuator \u2014 gantry, z_axis",
+      "unit_usd": 640.0,
+      "verified": false
+    },
+    {
+      "part_id": "ctrl.main",
+      "part_number": "PLACEHOLDER-CTRL",
+      "qty": 1,
+      "role": "motion controller",
+      "unit_usd": 180.0,
+      "verified": false
+    },
+    {
+      "part_id": "drv.dual",
+      "part_number": "PLACEHOLDER-DRV-2CH",
+      "qty": 2,
+      "role": "motor driver",
+      "unit_usd": 95.0,
+      "verified": false
+    },
+    {
+      "part_id": "ee.vacuum",
+      "part_number": "PLACEHOLDER-EE-VAC",
+      "qty": 1,
+      "role": "end effector",
+      "unit_usd": 240.0,
+      "verified": false
+    },
+    {
+      "part_id": "psu.150w",
+      "part_number": "PLACEHOLDER-PSU-150",
+      "qty": 1,
+      "role": "power supply",
+      "unit_usd": 55.0,
+      "verified": false
+    },
+    {
+      "part_id": "sens.limit",
+      "part_number": "PLACEHOLDER-SNS-LIM",
+      "qty": 2,
+      "role": "home/limit sensor",
+      "unit_usd": 18.0,
+      "verified": false
+    }
+  ],
+  "tiers": {
+    "good": {
+      "parts_usd": 2621.0,
+      "range_usd": [
+        3870.0,
+        5570.0
+      ]
+    }
+  },
+  "panel_tier": "M",
+  "geometry_params": {
+    "reach_m": 0.7,
+    "est_mass_kg": 1.19,
+    "base_height_m": 0.35,
+    "link1_m": 0.385,
+    "link2_m": 0.315
+  },
+  "checks": [
+    {
+      "name": "budget",
+      "status": "fail",
+      "detail": "tier 'good' quotes 3,870-5,570 USD against a 3,000 budget",
+      "repair": {
+        "action": "downgrade_tier",
+        "over_by_usd": 870.0
+      }
+    },
+    {
+      "name": "cost_target",
+      "status": "pass",
+      "detail": "parts 2,621 / 3,000 USD, sells at 3,870-5,570 / 10,000 USD",
+      "repair": null
+    },
+    {
+      "name": "torque_margin[gantry]",
+      "status": "warn",
+      "detail": "act.large chosen for gantry but this axis is not a gravity cantilever \u2014 its real requirement is unmodelled and must be sized by an engineer",
+      "repair": null
+    },
+    {
+      "name": "torque_margin[z_axis]",
+      "status": "pass",
+      "detail": "3.34x rated over 6.6 Nm required at z_axis (SF 2.5x already applied)",
+      "repair": null
+    },
+    {
+      "name": "panel_volume",
+      "status": "pass",
+      "detail": "1369 / 2228 cm^3 used",
+      "repair": null
+    },
+    {
+      "name": "panel_largest_part",
+      "status": "pass",
+      "detail": "",
+      "repair": null
+    },
+    {
+      "name": "reach",
+      "status": "pass",
+      "detail": "0.700 m from base (span 1.400 m)",
+      "repair": null
+    },
+    {
+      "name": "interference",
+      "status": "skipped",
+      "detail": "backend 'null' has no B-rep; run on a real CAD backend before quoting",
+      "repair": null
+    },
+    {
+      "name": "catalog_verified",
+      "status": "fail",
+      "detail": "unverified parts cannot be quoted: act.large, ctrl.main, drv.dual, ee.vacuum, psu.150w, sens.limit",
+      "repair": {
+        "action": "human_verify_parts",
+        "parts": [
+          "act.large",
+          "ctrl.main",
+          "drv.dual",
+          "ee.vacuum",
+          "psu.150w",
+          "sens.limit"
+        ]
+      }
+    },
+    {
+      "name": "vision",
+      "status": "skipped",
+      "detail": "no reviewer configured",
+      "repair": null
+    }
+  ],
+  "repair_attempts": 0,
+  "screenshots": [
+    "iso-top-right",
+    "front",
+    "top"
+  ],
+  "stages": [
+    {
+      "stage": "L1_intake",
+      "ok": true,
+      "detail": {
+        "assumptions": [
+          "payload taken as 0.35 kg, estimated from 'coffee mug' (0.25-0.45 kg)",
+          "reach taken as 0.70 m, from a working area of 'a desk'",
+          "the customer has no robotics background; every technical value here was derived from plain-language answers and must be confirmed at review"
+        ]
+      },
+      "messages": []
+    },
+    {
+      "stage": "L2_config",
+      "ok": true,
+      "detail": {
+        "archetype": "arm.3dof",
+        "tiers": [
+          "good"
+        ]
+      },
+      "messages": []
+    },
+    {
+      "stage": "L3_geometry",
+      "ok": true,
+      "detail": {
+        "panel_tier": "M",
+        "tier": "good",
+        "attempt": 0
+      },
+      "messages": []
+    },
+    {
+      "stage": "L4_validate",
+      "ok": false,
+      "detail": {
+        "summary": "fail=2 pass=5 skipped=1 warn=1",
+        "attempts": 0
+      },
+      "messages": []
+    },
+    {
+      "stage": "L5_present",
+      "ok": true,
+      "detail": {
+        "tier": "good",
+        "range_usd": [
+          3870.0,
+          5570.0
+        ]
+      },
+      "messages": []
+    }
+  ],
+  "outcome": "draft",
+  "engineer_corrections": [],
+  "customer_outcome": null,
+  "quoted_cost_usd": 4720.0,
+  "actual_build_cost_usd": null
+}
