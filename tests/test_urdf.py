@@ -7,6 +7,8 @@ and Gazebo's parser reject on, reimplemented so the suite catches them without a
 dependency.
 """
 
+import shutil
+import subprocess
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -166,3 +168,56 @@ def test_the_file_says_what_it_does_not_verify(arm_cfg):
     assert "CONCEPT MODEL" in doc
     for claim in ("tolerance", "wiring", "control stability"):
         assert claim in doc
+
+
+# --- the real parser ---------------------------------------------------------
+
+#: `check_urdf` ships with urdfdom, the C++ library ROS and Gazebo actually use
+#: to read URDF. Everything above is our reading of the spec, written from the
+#: outside; this is the ground truth. Skipped rather than required, so the suite
+#: still runs on a machine without it — but when it is present it is the check
+#: that matters.
+CHECK_URDF = shutil.which("check_urdf") or shutil.which(
+    "check_urdf", path="/opt/homebrew/bin:/usr/local/bin")
+needs_urdfdom = pytest.mark.skipif(
+    CHECK_URDF is None, reason="urdfdom not installed (brew install urdfdom)")
+
+
+def _check_urdf(doc: str, tmp_path, name: str):
+    f = tmp_path / f"{name}.urdf"
+    f.write_text(doc)
+    r = subprocess.run([CHECK_URDF, str(f)], capture_output=True, text=True)
+    assert r.returncode == 0, f"check_urdf rejected {name}:\n{r.stderr or r.stdout}"
+    assert "Successfully Parsed XML" in r.stdout
+    return r.stdout
+
+
+@needs_urdfdom
+def test_gazebos_own_parser_accepts_an_arm(arm_cfg, tmp_path):
+    out = _check_urdf(urdf_document(arm_cfg, "good", "arm"), tmp_path, "arm")
+    assert "root Link: base" in out
+
+
+@needs_urdfdom
+def test_gazebos_own_parser_accepts_a_rover(rover_cfg, tmp_path):
+    """The wheels are attached outside the generic tree walk, which is exactly
+    the kind of hand-placed structure a parser catches and a unit test does not."""
+    out = _check_urdf(urdf_document(rover_cfg, "good", "rover"), tmp_path, "rover")
+    assert "root Link: drive_base" in out
+    assert "wheel_left" in out and "wheel_right" in out
+
+
+@needs_urdfdom
+def test_gazebos_own_parser_accepts_a_mobile_manipulator(verified_catalog, tmp_path):
+    """Wheels and a full arm chain hanging off one root — the shape most likely
+    to produce two roots or an orphan."""
+    req = Requirements(
+        task="drive around and pick things up", payload_kg=1.0, reach_m=0.5,
+        budget_usd=9000.0, workspace_m=5.0,
+        capabilities={Capability.MOBILITY, Capability.MANIPULATION,
+                      Capability.GRASPING, Capability.VISION},
+    )
+    cfg = build(req, verified_catalog)
+    out = _check_urdf(urdf_document(cfg, "good", "mm"), tmp_path, "mm")
+    assert "root Link: drive_base" in out
+    assert "end_effector" in out

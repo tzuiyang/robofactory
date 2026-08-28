@@ -20,7 +20,7 @@ decision is in `log.md`; the layer design is in `docs/architecture.md`.
 | L5 present | **done** | Kinematic trajectory + BOM doc + plain-language render |
 | Web app | **done** | stdlib server + single page, light/dark. Runs `pipeline.run()` — same L4 gate, record and human gate as `demo.py`. Blocks on the seed catalog by design; `--demo` walks it |
 
-**120 tests passing.** No dependencies — stdlib only.
+**123 tests passing.** No dependencies — stdlib only.
 
 ```bash
 python3 serve.py              # the app -> blocks: no verified parts (correct)
@@ -134,8 +134,9 @@ create. Do not remove it to make a script work.
       Unverified prices carry a `?`; the subtotal is withheld until the parts are verified.
 - [x] ~~URDF export~~ — **done 2026-08-28.** `export/urdf.py`; `runs/<id>.urdf` per run and a
       download in the app. Joint effort/velocity limits come from the actuator selected for
-      that joint. **Never loaded in a real simulator yet** — no Gazebo on this machine.
-      First job: `check_urdf runs/<id>.urdf`, then `ros2 launch` it or drop it in Isaac.
+      that joint. **Verified with `check_urdf` (urdfdom) 2026-08-28** — arm, rover, mobile
+      manipulator and vacuum arm all parse first try. Wired into the suite as skip-if-absent
+      tests. Next: actually launch one in `gz sim` or Isaac and watch it move.
 - [ ] Replace the primitive `<geometry>` boxes with meshes once the Fusion module templates
       exist. Same URDF, better picture — and the concrete payoff for authoring the CAD.
 - [ ] Turn `interference` from SKIPPED into a real check by collision-testing the URDF

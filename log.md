@@ -587,6 +587,29 @@ list. Worth re-testing on a real user before the name hardens; recorded here so 
 not re-derived from scratch later.
 **Confidence:** n/a — a naming choice, held provisionally by the team's own framing.
 
+### [2026-08-28] URDF verified against the real parser
+**Type:** data
+**Context:** Closing the one thing left unverified in the URDF export — it had only ever been
+checked by my own reimplementation of the spec, never by a consumer.
+**Finding:** `check_urdf` (urdfdom — the C++ library ROS and Gazebo actually parse with)
+accepts every topology shape the app can produce, first try, no corrections:
+
+| model | root | result |
+|---|---|---|
+| bench arm | `base` | parsed, full 3-joint chain to `end_effector` |
+| rover | `drive_base` | parsed, both wheels + head + panel |
+| mobile manipulator | `drive_base` | parsed, wheels **and** the arm chain off one root |
+| vacuum arm | `base` | parsed |
+
+The mobile manipulator was the one at risk: wheels are attached outside the generic tree walk,
+so that shape was the most likely to produce two roots or an orphan link. It did not.
+**Consequence:** Three `check_urdf` tests added, skipped when urdfdom is absent so the suite
+still runs anywhere, but authoritative when it is present. 123 tests. Supersedes the "not
+verified / first real load is still ahead" caveat on the URDF export entry above.
+**Confidence:** high that the files load. Still says nothing about whether the robot *behaves*
+sensibly once simulated — inertias are still uniform-box estimates, which is the next thing to
+distrust.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1305,3 +1328,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | Result screen renders the orderable parts list: qty, plain-English role, manufacturer, part number, price and a link to buy it. Unverified prices flagged `?`, subtotal withheld. 105 tests | The app finally hands a person the thing the product is for |
 | 2026-08-28 | URDF export built (`export/urdf.py` + module `Frame`s + download in the app). Joint effort/velocity limits come from the selected catalog actuators. 120 tests. Not yet loaded in a real simulator | Simulation is unblocked without waiting on the Fusion templates |
 | 2026-08-28 | Product named **RoboFactory** (provisional). Repo and package unchanged. Strapline now names the deliverable | The app has a name |
+| 2026-08-28 | `check_urdf` accepts all four topology shapes first try; validation wired into the suite as skip-if-absent tests. 123 tests | The URDF export is verified, not just self-checked |
