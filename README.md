@@ -14,7 +14,7 @@ python3 serve.py 8000 --demo # same, but placeholder parts are allowed through
 python3 demo_novice.py       # three novice conversations, in the terminal
 python3 demo_general.py      # topology synthesis for very different robots
 python3 demo.py              # full pipeline -> BOM + trajectory
-python3 -m pytest -q         # 105 tests
+python3 -m pytest -q         # 120 tests
 ```
 
 The app runs the same `pipeline.run()` path as `demo.py`, so it is subject to the
@@ -35,6 +35,7 @@ L2 config.py + sizing.py    archetype pick, per-joint sizing, BOM, 3 tiers
 L3 cad/                     geometry, behind a SWAPPABLE backend
 L4 validate.py              deterministic gate -> vision gate -> bounded repair
 L5 present.py               kinematic trajectory + BOM doc -> HUMAN GATE
+   export/urdf.py           the design as URDF, for Gazebo / Isaac Sim
    pipeline.py              orchestrates L1->L5
    record.py                the design record / dataset
 ```

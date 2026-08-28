@@ -20,7 +20,7 @@ decision is in `log.md`; the layer design is in `docs/architecture.md`.
 | L5 present | **done** | Kinematic trajectory + BOM doc + plain-language render |
 | Web app | **done** | stdlib server + single page, light/dark. Runs `pipeline.run()` — same L4 gate, record and human gate as `demo.py`. Blocks on the seed catalog by design; `--demo` walks it |
 
-**105 tests passing.** No dependencies — stdlib only.
+**120 tests passing.** No dependencies — stdlib only.
 
 ```bash
 python3 serve.py              # the app -> blocks: no verified parts (correct)
@@ -132,6 +132,14 @@ create. Do not remove it to make a script work.
 - [x] ~~Orderable parts list on the result screen~~ — **done 2026-08-28.** `explain.shopping_list()`
       -> "What to order": qty, plain-English role, manufacturer, part number, price, vendor link.
       Unverified prices carry a `?`; the subtotal is withheld until the parts are verified.
+- [x] ~~URDF export~~ — **done 2026-08-28.** `export/urdf.py`; `runs/<id>.urdf` per run and a
+      download in the app. Joint effort/velocity limits come from the actuator selected for
+      that joint. **Never loaded in a real simulator yet** — no Gazebo on this machine.
+      First job: `check_urdf runs/<id>.urdf`, then `ros2 launch` it or drop it in Isaac.
+- [ ] Replace the primitive `<geometry>` boxes with meshes once the Fusion module templates
+      exist. Same URDF, better picture — and the concrete payoff for authoring the CAD.
+- [ ] Turn `interference` from SKIPPED into a real check by collision-testing the URDF
+      (pybullet or trimesh). Needs a dependency, which breaks stdlib-only — log the decision.
 - [ ] Real cycle-time video render for L5
 - [ ] Firmware/control code generation — the one layer that can be fully automated (compiler +
       tests + millisecond loop). Not started.

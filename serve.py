@@ -80,6 +80,8 @@ def result_payload(g: GuidedIntake) -> dict:
     cfg = result.configuration
     rec = result.record
     rec.save(RUNS_DIR)
+    if result.urdf:
+        (RUNS_DIR / f"{rec.id}.urdf").write_text(result.urdf)
 
     if cfg is None:
         reason = result.blocked_on[0] if result.blocked_on else "requirements incomplete"
@@ -173,6 +175,10 @@ def result_payload(g: GuidedIntake) -> dict:
         "over_budget": over_budget,
         # The deliverable. A person cannot order "a rotating shoulder joint".
         "shopping_list": shopping_list(cfg, tier),
+        # The design, in the syntax Gazebo and Isaac Sim read. Offered whether or
+        # not the parts are verified: it is a model, not a quote.
+        "urdf_url": f"/runs/{rec.id}.urdf" if result.urdf else None,
+        "urdf_error": result.urdf_error,
         "parts_subtotal_usd": round(cfg.tiers[tier].parts_cost_usd, 2) if priced else None,
         "gaps": cfg.capability_gaps,
         "caveats": caveats,
@@ -247,6 +253,16 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, page.encode(), "text/html; charset=utf-8")
         elif self.path == "/api/build":
             self._json({"build": _build_stamp()})
+        elif self.path.startswith("/runs/") and self.path.endswith(".urdf"):
+            # Name is a 12-char hex record id and nothing else, so a path like
+            # /runs/../../etc/passwd.urdf cannot resolve to a file.
+            stem = self.path[len("/runs/"):-len(".urdf")]
+            f = RUNS_DIR / f"{stem}.urdf"
+            if not (len(stem) == 12 and all(c in "0123456789abcdef" for c in stem)
+                    and f.is_file()):
+                self._json({"error": "not found"}, 404)
+                return
+            self._send(200, f.read_bytes(), "application/xml; charset=utf-8")
         else:
             self._json({"error": "not found"}, 404)
 

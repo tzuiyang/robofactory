@@ -7,6 +7,7 @@ nobody ships, ran the real thing. These tests pin the app to `pipeline.run()`.
 """
 
 import importlib.util
+import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
 
@@ -273,3 +274,26 @@ def test_every_catalog_part_can_be_ordered(seed_catalog):
     missing = [p.id for p in seed_catalog.query(allow_unverified=True)
                if not p.source_url]
     assert not missing, f"no vendor link on: {missing}"
+
+
+def test_the_app_offers_the_simulation_model(serve_mod, intake, tmp_path, monkeypatch):
+    """A URDF nobody can download is a library function, not a feature."""
+    monkeypatch.setattr(serve_mod, "DEMO_MODE", True)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    out = serve_mod.result_payload(intake)
+
+    assert out["urdf_error"] is None
+    assert out["urdf_url"] == f"/runs/{out['record_id']}.urdf"
+    written = tmp_path / f"{out['record_id']}.urdf"
+    assert written.exists(), "the file the link points at must be on disk"
+    ET.fromstring(written.read_text())
+
+
+def test_the_model_is_offered_even_when_the_price_is_not(serve_mod, intake, tmp_path,
+                                                        monkeypatch):
+    """It is a model, not a quote. `catalog_verified` withholds the number; it has
+    no business withholding the geometry."""
+    monkeypatch.setattr(serve_mod, "DEMO_MODE", True)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    out = serve_mod.result_payload(intake)
+    assert out["price"] is None and out["urdf_url"]

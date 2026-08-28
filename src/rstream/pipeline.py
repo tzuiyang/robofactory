@@ -17,6 +17,7 @@ from .cad import CADBackend, PlacedPart, View, get_backend
 from .cad.null import PANEL_TIERS
 from .catalog import Catalog
 from .intake import Requirements
+from .export import URDFError, urdf_document
 from .present import bom_document, build_trajectory
 from .record import DesignRecord, Outcome, Stage
 from .validate import MAX_REPAIR_ATTEMPTS, Status, deterministic_gate, vision_gate
@@ -31,6 +32,10 @@ class RunResult:
     configuration: L2.Configuration | None = None
     document: str | None = None
     trajectory: object | None = None
+    #: URDF for a simulator. None when the topology could not be expressed as
+    #: one — reported, never silently omitted.
+    urdf: str | None = None
+    urdf_error: str | None = None
     blocked_on: list[str] = field(default_factory=list)
 
     @property
@@ -156,6 +161,13 @@ def run(
     # --- L5 -------------------------------------------------------------
     result.trajectory = build_trajectory(cfg, req)
     result.document = bom_document(cfg, req, tier)
+    # A design that cannot be expressed as a URDF is a design we do not
+    # understand well enough to simulate. Say so; do not quietly ship without it.
+    try:
+        result.urdf = urdf_document(cfg, tier, f"concept_{rec.id}")
+    except URDFError as e:
+        result.urdf_error = str(e)
+        rec.log(Stage.PRESENT, False, {}, f"urdf export failed: {e}")
     rec.bom = [
         {"part_id": l.part.id, "part_number": l.part.part_number, "qty": l.qty,
          "role": l.role, "unit_usd": l.part.price_usd, "verified": l.part.verified}

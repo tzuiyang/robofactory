@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<!--
+  CONCEPT MODEL — generated, not engineered.
+  
+  9 links, 3 moving joints.
+  Kinematically faithful: link lengths, joint ranges and the tree come from
+  the sized design. Joint effort and velocity limits are the rated figures of
+  the actuators actually selected from the catalog.
+  
+  Dynamically approximate: every link is a uniform box, so inertia tensors are
+  shape estimates, not measurements. No friction, damping or contact tuning.
+  
+  Loading this in a simulator verifies reach, envelope and collision-free
+  motion. It verifies nothing about tolerance stack-up, assembly, wiring,
+  thermal behaviour, backlash or control stability on real hardware.
+  
+  NOTE: the model reaches 0.216 m along +X, against a quoted reach of 0.200 m (1.08x) — link lengths sum to more than the stated reach (see TODO.md)
+-->
+<robot name="concept_47be2721a914">
+  <link name="base">
+    <visual>
+      <origin xyz="0.000000 0.000000 0.040000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.180000 0.180000 0.080000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.040000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.180000 0.180000 0.080000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.040000" rpy="0 0 0"/>
+      <mass value="2.000000"/>
+      <inertia ixx="0.00646667" ixy="0" ixz="0" iyy="0.00646667" iyz="0" izz="0.01080000"/>
+    </inertial>
+  </link>
+  <link name="shoulder">
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.080000 0.080000 0.080000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.080000 0.080000 0.080000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <mass value="1.450000"/>
+      <inertia ixx="0.00154667" ixy="0" ixz="0" iyy="0.00154667" iyz="0" izz="0.00154667"/>
+    </inertial>
+  </link>
+  <link name="upper_link">
+    <visual>
+      <origin xyz="0.055000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.110000 0.040000 0.040000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.055000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.110000 0.040000 0.040000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.055000 0.000000 0.000000" rpy="0 0 0"/>
+      <mass value="0.400000"/>
+      <inertia ixx="0.00010667" ixy="0" ixz="0" iyy="0.00045667" iyz="0" izz="0.00045667"/>
+    </inertial>
+  </link>
+  <link name="elbow">
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.080000 0.080000 0.080000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.080000 0.080000 0.080000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <mass value="1.121000"/>
+      <inertia ixx="0.00119573" ixy="0" ixz="0" iyy="0.00119573" iyz="0" izz="0.00119573"/>
+    </inertial>
+  </link>
+  <link name="fore_link">
+    <visual>
+      <origin xyz="0.045000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.090000 0.040000 0.040000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.045000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.090000 0.040000 0.040000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.045000 0.000000 0.000000" rpy="0 0 0"/>
+      <mass value="0.400000"/>
+      <inertia ixx="0.00010667" ixy="0" ixz="0" iyy="0.00032333" iyz="0" izz="0.00032333"/>
+    </inertial>
+  </link>
+  <link name="wrist">
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.080000 0.080000 0.080000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.080000 0.080000 0.080000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <mass value="1.121000"/>
+      <inertia ixx="0.00119573" ixy="0" ixz="0" iyy="0.00119573" iyz="0" izz="0.00119573"/>
+    </inertial>
+  </link>
+  <link name="wrist_link">
+    <visual>
+      <origin xyz="0.008000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.016000 0.040000 0.040000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.008000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.016000 0.040000 0.040000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.008000 0.000000 0.000000" rpy="0 0 0"/>
+      <mass value="0.400000"/>
+      <inertia ixx="0.00010667" ixy="0" ixz="0" iyy="0.00006187" iyz="0" izz="0.00006187"/>
+    </inertial>
+  </link>
+  <link name="end_effector">
+    <visual>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.110000 0.100000 0.050000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.110000 0.100000 0.050000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+      <mass value="0.500000"/>
+      <inertia ixx="0.00052083" ixy="0" ixz="0" iyy="0.00060833" iyz="0" izz="0.00092083"/>
+    </inertial>
+  </link>
+  <link name="control_panel">
+    <visual>
+      <origin xyz="-0.110000 0.000000 0.030000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.240000 0.180000 0.120000"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0.110000 0.000000 0.030000" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.240000 0.180000 0.120000"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="-0.110000 0.000000 0.030000" rpy="0 0 0"/>
+      <mass value="1.500000"/>
+      <inertia ixx="0.00585000" ixy="0" ixz="0" iyy="0.00900000" iyz="0" izz="0.01125000"/>
+    </inertial>
+  </link>
+  <joint name="base_to_shoulder" type="revolute">
+    <parent link="base"/>
+    <child link="shoulder"/>
+    <origin xyz="0.000000 0.000000 0.080000" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit effort="48.0000" velocity="2.4100" lower="-1.570795" upper="1.570795"/>
+  </joint>
+  <joint name="shoulder_to_upper_link" type="fixed">
+    <parent link="shoulder"/>
+    <child link="upper_link"/>
+    <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+  </joint>
+  <joint name="upper_link_to_elbow" type="revolute">
+    <parent link="upper_link"/>
+    <child link="elbow"/>
+    <origin xyz="0.110000 0.000000 0.000000" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit effort="8.3000" velocity="15.5000" lower="-1.570795" upper="1.570795"/>
+  </joint>
+  <joint name="elbow_to_fore_link" type="fixed">
+    <parent link="elbow"/>
+    <child link="fore_link"/>
+    <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+  </joint>
+  <joint name="fore_link_to_wrist" type="revolute">
+    <parent link="fore_link"/>
+    <child link="wrist"/>
+    <origin xyz="0.090000 0.000000 0.000000" rpy="0 0 0"/>
+    <axis xyz="0.0 1.0 0.0"/>
+    <limit effort="8.3000" velocity="15.5000" lower="-1.570795" upper="1.570795"/>
+  </joint>
+  <joint name="wrist_to_wrist_link" type="fixed">
+    <parent link="wrist"/>
+    <child link="wrist_link"/>
+    <origin xyz="0.000000 0.000000 0.000000" rpy="0 0 0"/>
+  </joint>
+  <joint name="wrist_link_to_end_effector" type="fixed">
+    <parent link="wrist_link"/>
+    <child link="end_effector"/>
+    <origin xyz="0.016000 0.000000 0.000000" rpy="0 0 0"/>
+  </joint>
+  <joint name="base_to_control_panel" type="fixed">
+    <parent link="base"/>
+    <child link="control_panel"/>
+    <origin xyz="-0.220000 0.000000 0.060000" rpy="0 0 0"/>
+  </joint>
+</robot>

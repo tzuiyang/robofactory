@@ -102,6 +102,9 @@ li{margin:5px 0}
 .bomrow.total .what{color:var(--muted); font-weight:400}
 .unconf{color:var(--warn); font-weight:700; margin-left:4px}
 @media (max-width:520px){ .bomrow{flex-wrap:wrap} .bomrow .cost{margin-left:46px} }
+.dl{display:inline-block; margin-top:10px; padding:9px 15px; border-radius:9px;
+  border:1px solid var(--accent); color:var(--accent); text-decoration:none; font-size:14.5px}
+.dl:hover{background:var(--accent-soft)}
 .build{margin-top:14px; font-size:11.5px; color:var(--muted); opacity:.55}
 .caveats{font-size:14.5px; color:var(--muted); margin-top:26px;
   padding-top:18px; border-top:1px solid var(--line)}
@@ -226,6 +229,14 @@ function renderResult(r){
             nobody here has re-checked them, so treat them as a guide rather than a
             quote. The part numbers are real — you can order from them today.</div>`;
     h += `</div>`;
+  }
+  if(r.urdf_url){
+    h += `<div class="sec"><h3>Try it in a simulator</h3>
+          <div class="note">A working 3D model of this machine — link lengths, joint
+          ranges and motor limits taken from the parts above. Free simulators like
+          Gazebo and Isaac Sim open it directly, so you can watch it move before you
+          order anything. It shows reach and motion; it is not proof the machine works.</div>
+          <p><a class="dl" href="${esc(r.urdf_url)}" download>Download the 3D model (URDF)</a></p></div>`;
   }
   if(r.gaps && r.gaps.length){
     h += `<div class="sec"><h3>Needs sourcing</h3>`;

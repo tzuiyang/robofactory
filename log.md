@@ -531,6 +531,43 @@ the suite. A part nobody can buy has no business in a catalog whose whole purpos
 output is orderable.
 **Confidence:** high — 105 tests, verified in the browser.
 
+### [2026-08-28] URDF export: the design record was already a link tree
+**Type:** breakthrough
+**Context:** Asked how to get to a URDF that loads in Gazebo or Isaac Sim.
+**Finding:** It is a *renderer*, not a modelling step, and it does not depend on the Fusion
+templates that have blocked L3 for months. `Topology` already carries parents, joint types,
+DOF, driven link lengths and per-module masses — that is a URDF minus the XML. The three
+missing pieces were primitive shapes, inertia tensors, and mount frames.
+**The part worth having:** joint `effort` and `velocity` limits come off the actuator actually
+selected for that joint. Most hand-written URDFs invent those because no motor has been picked;
+here one has, sized against a real load. A 0.35 m arm exports with a 48 Nm shoulder at
+2.41 rad/s and 8.3 Nm elbow/wrist at 15.5 rad/s — the AK80-64 and AK70-10 from the catalog.
+**Decision — kinematically faithful, dynamically approximate.** Every link is a uniform box,
+so inertias are shape estimates and there is no friction, damping or contact tuning. A box of
+the right size and mass is honest; a mesh we do not have would not be. Stated in a header
+comment in every generated file, alongside the same "verifies nothing about tolerance,
+wiring, thermal or control stability" caveat the concept animation carries. This does not
+breach the "kinematic, not physics, for v1" constraint — nothing here runs a physics engine —
+but it is the door to it, so it is logged as a decision rather than assumed.
+**Found and fixed while building:**
+- Joint modules offsetting their child by 50 mm added ~150 mm of reach the sizing never
+  accounted for: the simulated arm out-reached the quoted one. Children now mount on the axis.
+- The control panel is off the kinematic tree, defaulted to the origin, and put a 240 mm box
+  through the middle of the base — a self-collision on load. Now bolted behind the base.
+- The residual 1.08x reach discrepancy (link lengths vs quoted reach, an open TODO item) is
+  now printed as a NOTE in the file rather than being discovered by whoever measures it.
+- A mobile base carries a `reach_m` it never uses; comparing against it reported a false 0.00x.
+**Not verified:** no Gazebo, `check_urdf` or `urdf_parser_py` on this machine, so the file has
+never been loaded by a real consumer. `_validate()` reimplements what those reject on (one
+root, no orphan or two-parent links, non-zero mass and inertia) and the XML parses, but the
+first real load is still ahead. **This is the next thing to check.**
+**Consequence:** `src/rstream/export/urdf.py`, `Frame` on every module in `LIBRARY`,
+`RunResult.urdf`, `runs/<id>.urdf` written per run, and a "Try it in a simulator" download in
+the app. Offered whether or not the parts are verified — it is a model, not a quote. 120 tests
+(13 of them URDF).
+**Confidence:** high on structure and on the numbers coming from the right places; medium that
+it loads clean in Gazebo first try; low on dynamic fidelity, which is stated in the file.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1247,3 +1284,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | Failure presentation fixed: five L4 checks had no plain-language message and fell through to a generic dead end; over-budget and unpriced designs now render in full with the reason. 101 tests | The app explains every refusal in terms the person can act on |
 | 2026-08-28 | Catalog filled with 22 real, linked, orderable parts (still unverified by design). Data: 3k buys 1.0 kg at 0.5 m, not 0.35 m at 0.5 kg; torque not cost is now the binding limit; the 9-48 Nm gap costs ~500 USD on every arm and is why tiers collapse | The catalog is real; only human verification stands between the app and a quote |
 | 2026-08-28 | Result screen renders the orderable parts list: qty, plain-English role, manufacturer, part number, price and a link to buy it. Unverified prices flagged `?`, subtotal withheld. 105 tests | The app finally hands a person the thing the product is for |
+| 2026-08-28 | URDF export built (`export/urdf.py` + module `Frame`s + download in the app). Joint effort/velocity limits come from the selected catalog actuators. 120 tests. Not yet loaded in a real simulator | Simulation is unblocked without waiting on the Fusion templates |

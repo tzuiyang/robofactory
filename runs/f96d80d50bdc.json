@@ -1,0 +1,48 @@
+{
+  "id": "f96d80d50bdc",
+  "schema_version": 1,
+  "created_at": null,
+  "requirements": {
+    "task": "pick up small parts and put them in a bin",
+    "payload_kg": 0.085,
+    "reach_m": 0.2,
+    "budget_usd": 3000.0,
+    "environment": "benchtop"
+  },
+  "archetype_id": null,
+  "sizing": {},
+  "bom": [],
+  "tiers": {},
+  "panel_tier": null,
+  "geometry_params": {},
+  "checks": [],
+  "repair_attempts": 0,
+  "screenshots": [],
+  "stages": [
+    {
+      "stage": "L1_intake",
+      "ok": true,
+      "detail": {
+        "assumptions": [
+          "payload taken as 0.08 kg, estimated from 'lighter than a phone' (0.02-0.15 kg)",
+          "reach taken as 0.20 m, from a working area of 'a laptop'",
+          "the customer has no robotics background; every technical value here was derived from plain-language answers and must be confirmed at review"
+        ]
+      },
+      "messages": []
+    },
+    {
+      "stage": "L2_config",
+      "ok": false,
+      "detail": {},
+      "messages": [
+        "no tier could be configured from the current catalog: unverified parts cannot be quoted: the only joint actuators delivering 9.1 Nm rated are not human-verified. Check part number, price and specs against the vendor, then set verified=true in the catalog."
+      ]
+    }
+  ],
+  "outcome": "rejected_infeasible",
+  "engineer_corrections": [],
+  "customer_outcome": null,
+  "quoted_cost_usd": null,
+  "actual_build_cost_usd": null
+}
