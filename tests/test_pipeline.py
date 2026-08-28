@@ -16,18 +16,38 @@ def test_end_to_end_reaches_human_review(verified_catalog, small_req):
     assert r.record.quoted_cost_usd > 0
 
 
-def test_cost_ceiling_blocks_a_machine_we_would_not_build(verified_catalog, req):
+def test_cost_ceiling_blocks_a_machine_we_would_not_build(verified_catalog):
     """We build robots that cost under 3,000 USD in parts and sell under 10,000.
     A request past that is not quoted cheaper — it is refused, after the repair
-    loop has tried every cheaper tier. `req` is a 0.45 m / 0.8 kg arm, which is
-    just over the line: its shoulder needs the next actuator class up and that
-    single part is ~half the parts budget.
+    loop has tried every cheaper tier.
+
+    The example is a mobile manipulator that also sees and speaks: two drive
+    motors, a three-joint arm, two single-board computers, a battery, a camera and
+    an audio chain. It comes to ~3,190 USD in parts. It used to be a plain 0.45 m
+    arm, but with real catalog prices (2026-08-28) that arm is only ~2,620 USD and
+    sits comfortably inside the ceiling — the placeholder prices had been
+    overstating what a bench arm costs.
     """
+    from rstream.capabilities import Capability
     from rstream.config import MAX_PARTS_COST_USD
+    req = Requirements(
+        task="drive around the workshop, pick parts up and tell me what it sees",
+        payload_kg=1.0, reach_m=0.5, budget_usd=9000.0, workspace_m=5.0,
+        capabilities={Capability.MOBILITY, Capability.MANIPULATION,
+                      Capability.GRASPING, Capability.VISION,
+                      Capability.AUDIO_IN, Capability.AUDIO_OUT,
+                      Capability.ONBOARD_COMPUTE},
+    )
     r = pipeline.run(req, verified_catalog)
     assert not r.ok
     assert any("cost_target" in b for b in r.blocked_on)
-    assert r.record.repair_attempts > 0, "it must try cheaper tiers before giving up"
+    # It must exhaust the cheaper tiers before giving up — which is zero retries
+    # when there is only one tier. With the real catalog the actuator ladder jumps
+    # 9 Nm -> 48 Nm with nothing between, so good/better/best all select the same
+    # parts and collapse into one tier. Asserting `> 0` here would be asserting
+    # that the catalog has depth, which is a catalog fact, not a pipeline fact.
+    assert r.record.repair_attempts == len(r.configuration.tiers) - 1, (
+        "the repair loop must try every cheaper tier before refusing")
     assert all(t.parts_cost_usd > MAX_PARTS_COST_USD for t in r.configuration.tiers.values())
 
 

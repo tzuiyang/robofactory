@@ -193,12 +193,17 @@ def _actuator_lines(
 #: kind this becomes a constrained query like ``_pick_actuator``. It is a dict so
 #: that a kind with no entry shows up as a hole in the BOM instead of vanishing.
 _KIND_DEFAULTS: dict[str, tuple[str, str]] = {
-    "controller": ("ctrl.main", "motion controller"),
-    "driver": ("drv.dual", "motor driver"),
+    "controller": ("ctrl.pi5", "motion controller"),
+    "driver": ("drv.mdd10a", "motor driver"),
     "psu": ("psu.150w", "power supply"),
     "sensor": ("sens.limit", "home/limit sensor"),
-    "wheel": ("wheel.100mm", "drive wheel"),
+    "wheel": ("wheel.96mm", "drive wheel"),
     "battery": ("batt.24v", "battery"),
+    "camera": ("cam.picam3", "camera"),
+    "microphone": ("mic.respeaker2", "microphone array"),
+    "speaker": ("spk.mono3w", "speaker"),
+    "audio_amp": ("amp.max98357", "audio amplifier"),
+    "compute_module": ("comp.pi5", "onboard computer"),
 }
 
 #: End effector is chosen by which effector module the topology actually placed,

@@ -11,7 +11,7 @@ decision is in `log.md`; the layer design is in `docs/architecture.md`.
 
 | Layer | State | Notes |
 |---|---|---|
-| L0 catalog | **placeholder** | 15 PLACEHOLDER parts, all `verified:false` — cannot produce a quote by design. Two actuator families: joint servos 0.55–75 Nm, one drive gearmotor |
+| L0 catalog | **real parts, unverified** | 22 orderable parts with vendor links, all `verified:false` — cannot produce a quote until a human checks them. 7 joint actuators 0.28–48 Nm, 3 drive gearmotors |
 | L0 modules | **defined, no CAD** | 10 modules with typed interfaces; none have parametric templates yet |
 | L1 intake | **done** | Guided novice conversation, 3–5 questions, zero robotics vocabulary |
 | L2 config | **done** | Capability closure → topology → per-joint sizing (cantilever **+ traction**) → BOM **derived from topology** → tiers |
@@ -35,12 +35,27 @@ python3 -m pytest -q          # 102 tests
 
 ## Next steps, in order of leverage
 
-### 1. Real catalog parts — ~1 hour, unblocks every quote
+### 1. Verify the catalog — ~1 hour, unblocks every quote
 
-> **This is now the single thing standing between the app and a working quote.**
-> Since 2026-08-28 the web app runs the real pipeline, so with an all-unverified
-> catalog *every* request is blocked. That is correct behaviour. Verifying parts
-> is what turns it on.
+> **The parts are in.** As of 2026-08-28 the catalog holds 22 real, orderable parts
+> with a `source_url` on every one and a `notes` field saying which numbers came off
+> the vendor page and which are derived. Nothing is `verified` — that is your step,
+> and until it happens *every* request is blocked. That is correct behaviour.
+>
+> ```
+> python3 curate.py status          # the list, with links
+> python3 curate.py verify act.j830 # open the link, check, type 'checked'
+> ```
+>
+> **Check these first, they are engineering judgement not vendor figures:**
+> - DYNAMIXEL rated torque is `stall / 5` (ROBOTIS publishes stall; the /5 comes from
+>   their own XM540 page, where 10.6 Nm stall is listed as 2.12 Nm rated).
+> - goBILDA rated torque is `stall / 3` and loaded speed is `free speed / 2`.
+> - Every `keepout` value, and any mass or dimension marked UNCONFIRMED in `notes`.
+>
+> **The gap worth closing: nothing sits between 9 Nm and 48 Nm.** Every arm shoulder
+> needs ~21 Nm and buys a $989.90 48 Nm actuator. One part in the 15–25 Nm band cuts
+> ~$500 off every arm and is what makes good/better/best differ at all.
 **File:** `src/rstream/catalog/data/parts.json` — edit it with `python3 curate.py`.
 
 Start with `python3 curate.py needs`: it prints the torque and speed rungs the sizing

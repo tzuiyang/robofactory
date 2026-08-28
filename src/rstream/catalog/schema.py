@@ -37,6 +37,14 @@ class PartKind(str, Enum):
     # wrong parts — the guardrail worked, the catalog just had not caught up.
     WHEEL = "wheel"
     BATTERY = "battery"
+    # Added 2026-08-28 when the catalog first got parts to fill them. The module
+    # library has asked for these since the general-topology pivot; until now a
+    # talking, seeing robot produced a BOM with five holes in it.
+    CAMERA = "camera"
+    MICROPHONE = "microphone"
+    SPEAKER = "speaker"
+    AUDIO_AMP = "audio_amp"
+    COMPUTE_MODULE = "compute_module"
 
 
 class ActuatorRole(str, Enum):

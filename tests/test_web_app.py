@@ -157,8 +157,9 @@ def test_over_budget_design_is_shown_with_its_price(serve_mod, verified_catalog,
     monkeypatch.setattr(serve_mod, "CATALOG", verified_catalog)
     monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
     g = GuidedIntake()
-    for k, v in [("task", "fold laundry"), ("object", "t-shirt"),
-                 ("weight_refine", "lighter than a phone"), ("area", "a dining table"),
+    for k, v in [("task", "pick up small parts and put them in a bin"),
+                 ("object", "machined part"),
+                 ("weight_refine", "lighter than a phone"), ("area", "a desk"),
                  ("budget", "under $3,000"), ("confirm", "yes, that's right")]:
         g.answer(k, v)
     out = serve_mod.result_payload(g)

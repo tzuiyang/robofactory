@@ -462,6 +462,50 @@ the machine. Plain-language entries added for all five unmapped checks, pinned b
 `test_every_blocking_check_has_plain_language`.
 **Confidence:** high — 101 tests; the three outcome classes verified through the running app.
 
+### [2026-08-28] Real catalog: 22 orderable parts, every one sourced and linked
+**Type:** data
+**Context:** Asked to go and find real parts with links so the team or an end user can order.
+Catalog research is offline curation, which the rules allow; setting `verified=true` is not,
+so every entry is `verified:false` with a `source_url` and a `notes` field saying which numbers
+came off the vendor page and which are derived or estimated.
+**Finding — the actuator ladder we can actually buy:**
+
+| id | part | rated Nm | USD | note |
+|---|---|---:|---:|---|
+| act.j098 | FEETECH STS3215 | 0.98 | 23.99 | vendor publishes rated directly |
+| act.j028 | ROBOTIS XL430-W250-T | 0.28 | 27.50 | stall/5 |
+| act.j082 | ROBOTIS XM430-W350-T | 0.82 | 310.39 | 11x the XL430 for 3x the torque |
+| act.j212 | ROBOTIS XM540-W270-T | 2.12 | 482.89 | vendor publishes rated |
+| act.j830 | CubeMars AK70-10 | 8.3 | 398.90 | 24 V, integrated driver |
+| act.j900 | CubeMars AK80-9 | 9.0 | 479.90 | 48 V only |
+| act.j4800 | CubeMars AK80-64 | 48.0 | 989.90 | a third of the parts ceiling |
+| act.d078/124/224 | goBILDA 5203 (19.2/26.9/50.9:1) | 0.79/1.24/2.24 | 54.99 | stall/3, free-speed/2 |
+
+**Finding — the envelope moved, and not the way we assumed.** Real prices are *lower* than the
+placeholders for a bench arm: a 0.45 m / 0.8 kg arm is ~2,620 USD in parts, comfortably inside
+the 3,000 ceiling, where the placeholder catalog said it was over. Supersedes the 2026-08-28
+entry claiming 3,000 USD buys "roughly a 0.35 m reach at 0.5 kg" — it buys **1.0 kg at 0.5 m**.
+The binding constraint is no longer cost, it is **torque**: nothing above 48 Nm exists in the
+catalog, so 1.5 kg at 0.6 m is refused outright.
+**Finding — the expensive gap is 9 to 48 Nm.** Nothing sits between the AK80-9 and the AK80-64,
+so every arm shoulder, needing ~21 Nm, buys a 48 Nm part at 989.90 USD. One actuator in the
+15-25 Nm band would cut roughly 500 USD off every arm we quote **and** is what makes
+good/better/best differ — with the present ladder all three tiers select identical parts and
+`_dedupe_tiers` collapses them to one. MyActuator RMD-X6-60 (20 Nm rated, ~490 USD) is the
+obvious candidate but only reseller pricing was findable.
+**Data — Raspberry Pi 5 8 GB is 130 USD as of April 2026**, up from 80: two price rises in
+three months on memory costs. Re-check it; it moves faster than anything else in the catalog.
+**Not sourced:** 2020 aluminium extrusion (no vendor page would serve a price) and a vacuum end
+effector. Both now show as holes in the BOM rather than as invented parts, which is correct.
+**Consequence:** `PartKind` gained camera / microphone / speaker / audio_amp / compute_module —
+the module library has asked for these since the general-topology pivot and a talking, seeing
+robot produced a BOM with five holes. Two pipeline tests changed because the machine they
+described is no longer over the ceiling; both docstrings record why.
+**Confidence:** high on part numbers and specs (each read off the vendor page, linked in
+`source_url`). Medium on prices — read once, on 2026-08-28, some from resellers. Low on the
+derived continuous ratings (DYNAMIXEL stall/5, goBILDA stall/3) — those are engineering
+judgement, flagged in each part's `notes`, and are the first thing to check.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1176,3 +1220,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | `curate.py` added (status / needs / verify / add); repo put under git. Data: the sizing demands a 7-15 Nm joint rung the seed ladder does not have | The human catalog step is now a guided 4-command loop, not a JSON edit |
 | 2026-08-28 | Fixed: `--demo` blanked the whole result screen. A design whose only failing check is `catalog_verified` now renders in full with the price withheld. 99 tests | The flow can finally be walked end to end without faking verification |
 | 2026-08-28 | Failure presentation fixed: five L4 checks had no plain-language message and fell through to a generic dead end; over-budget and unpriced designs now render in full with the reason. 101 tests | The app explains every refusal in terms the person can act on |
+| 2026-08-28 | Catalog filled with 22 real, linked, orderable parts (still unverified by design). Data: 3k buys 1.0 kg at 0.5 m, not 0.35 m at 0.5 kg; torque not cost is now the binding limit; the 9-48 Nm gap costs ~500 USD on every arm and is why tiers collapse | The catalog is real; only human verification stands between the app and a quote |

@@ -57,8 +57,9 @@ one new subclass (Onshape REST, or a headless kernel like CadQuery/build123d) �
 
 ## Rules enforced in code, not prose
 
-- **Unverified parts cannot be quoted.** Seed catalog is 100% unverified, so it *cannot* produce
-  a customer BOM. A human sets `verified=true` after checking part number, price and specs.
+- **Unverified parts cannot be quoted.** The catalog holds 22 real, orderable parts with vendor
+  links — and 0 verified, so it *cannot* produce a customer BOM. A human sets `verified=true`
+  after checking part number, price and specs. `python3 curate.py status` lists them.
 - **No mesh geometry.** `.stl`/`.obj` are rejected at catalog entry — a mesh has no planar face
   to mate against. STEP only, normalized once.
 - **No runtime part research.** Part selection is a catalog query. Unknown id raises.
@@ -86,8 +87,9 @@ every joint torque across representative jobs, split by actuator role.
 
 Both are *content*, not code:
 
-1. **Real catalog parts** (log.md open q #5, #12) — replace PLACEHOLDER entries with real
-   purchasable parts. Needs ~5+ actuator classes or the good/better/best tiers collapse into
-   one. Use `curate.py`.
+1. **Catalog verification** (log.md open q #5, #12) — the parts are sourced and linked; a human
+   has to check each against its vendor page and set `verified=true`. Use `curate.py`. The
+   actuator ladder still has nothing between 9 Nm and 48 Nm, which is why the good/better/best
+   tiers collapse into one.
 2. **Archetype templates** (open q #6, #13) — parametric CAD authored by an engineer. The AI
    instantiates them; it does not generate geometry.

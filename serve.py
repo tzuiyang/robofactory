@@ -141,8 +141,9 @@ def result_payload(g: GuidedIntake) -> dict:
             "the number down."
         )
     if DEMO_MODE:
-        caveats = ["DEMO MODE: this design was built from placeholder parts. Nothing "
-                   "here has been checked against a vendor."] + caveats
+        caveats = ["DEMO MODE: the parts behind this design are real and orderable, "
+                   "but nobody has checked their price or specs against the vendor "
+                   "yet. Treat every number as provisional."] + caveats
 
     return {
         "done": True,
@@ -262,7 +263,7 @@ def main() -> int:
     print(f"  robotics_streamline  ->  http://localhost:{port}")
     print(f"  catalog: {stats['total']} parts, {stats['verified']} verified")
     if DEMO_MODE:
-        print("  DEMO MODE: unverified parts allowed. Prices shown are not real.")
+        print("  DEMO MODE: unverified parts allowed. Prices are unconfirmed.")
     elif not stats["verified"]:
         print("  no verified parts — every request will be blocked, by design.")
         print("  run with --demo to walk the flow against placeholder parts.")
