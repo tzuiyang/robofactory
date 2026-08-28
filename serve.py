@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -54,6 +55,19 @@ CATALOG = Catalog.load()
 #: Set from the command line. Never defaults on: an unverified part reaching a
 #: customer is the one failure mode the catalog rules exist to prevent.
 DEMO_MODE = False
+
+
+def _build_stamp() -> str:
+    """Latest mtime across the files that decide what the page does.
+
+    Shown in the footer so "still nothing" can be answered in one glance: if the
+    stamp on screen is older than the last edit, the browser is showing a cached
+    page, not a broken feature.
+    """
+    files = [HERE / "web" / "index.html", HERE / "serve.py",
+             HERE / "src" / "rstream" / "explain.py"]
+    newest = max(f.stat().st_mtime for f in files if f.exists())
+    return time.strftime("%H:%M:%S", time.localtime(newest))
 
 
 def question_payload(q) -> dict:
@@ -213,6 +227,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        # The page is edited constantly and served from a process that restarts
+        # on every change. Without this a browser holds the old index.html and
+        # the person is looking at a build from three fixes ago while being told
+        # to refresh — which is exactly what happened on 2026-08-28.
+        self.send_header("Cache-Control", "no-store, must-revalidate")
         self.end_headers()
         self.wfile.write(body)
 
@@ -221,7 +240,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if self.path in ("/", "/index.html"):
-            self._send(200, (HERE / "web" / "index.html").read_bytes(), "text/html; charset=utf-8")
+            # Read from disk every request: no restart needed to pick up an edit.
+            page = (HERE / "web" / "index.html").read_text()
+            stamp = _build_stamp()
+            page = page.replace("{{BUILD}}", stamp)
+            self._send(200, page.encode(), "text/html; charset=utf-8")
+        elif self.path == "/api/build":
+            self._json({"build": _build_stamp()})
         else:
             self._json({"error": "not found"}, 404)
 
