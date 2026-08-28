@@ -41,7 +41,12 @@ python3 -m pytest -q          # 97 tests
 > Since 2026-08-28 the web app runs the real pipeline, so with an all-unverified
 > catalog *every* request is blocked. That is correct behaviour. Verifying parts
 > is what turns it on.
-**File:** `src/rstream/catalog/data/parts.json`
+**File:** `src/rstream/catalog/data/parts.json` — edit it with `python3 curate.py`.
+
+Start with `python3 curate.py needs`: it prints the torque and speed rungs the sizing
+actually demands, per role, so you shop against real numbers rather than a guessed ladder.
+Then `python3 curate.py verify <id>` walks one part and only sets `verified` when you
+type `checked`.
 
 Replace the PLACEHOLDER entries with parts the team actually stocks. Per part:
 

@@ -403,6 +403,27 @@ untracked directory that a stray glob can empty. `git init` before the records s
 engineer corrections.
 **Confidence:** high.
 
+### [2026-08-28] `curate.py` — making the human step cheap instead of automating it
+**Type:** decision
+**Context:** Asked to finish the catalog work. The catalog is the last thing blocking a quote.
+**Finding:** Filling it in is the one step that cannot be automated: `verified=true` means a
+person checked a vendor page, and a fabricated part number is indistinguishable from a real
+one to the novice this product is for. So the tool does not look anything up. It reports what
+is missing, derives the shopping list **from the sizing code** (`curate.py needs` walks
+`chain_loads` over representative jobs and prints every joint's torque, split by actuator
+role), and walks one part at a time, setting `verified` only when the curator types `checked`.
+**Rejected:** generating plausible parts from model knowledge, and live vendor lookup. Both
+produce a catalog that looks finished and quotes part numbers nobody has seen.
+**Data:** the rungs the catalog must actually hit are 0.7 / 1.2 / 1.8 / 2.9 / 3.4 / 7.3 / 9.2 /
+14.3 / 21.3 / 30.8 / 39.9 / 81.7 Nm joint, plus one drive rung ~0.7 Nm at >=10 rad/s. The seed
+ladder (0.55 / 1.8 / 6 / 22 / 75) misses the 7-15 Nm band entirely, which is where the elbow
+of every mid-size arm lands. Five kinds are still unfillable: camera, microphone, speaker,
+audio_amp, compute_module.
+**Consequence:** `git init` done at the same time — the design records are the dataset and
+were sitting untracked.
+**Confidence:** high for the rungs (derived, not estimated); the missing 7-15 Nm band is the
+concrete reason tiers collapse.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1114,3 +1135,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-25 | Layered system plan L0-L5 | **Adopted.** Spec in `docs/architecture.md`. Rejected: runtime part research, STL download, LLM panel packing. Adopted: panel tiers, screenshot gate, review-gate data capture. Flagged: Fusion cannot be production backend (open q #9) |
 | 2026-08-28 | First end-to-end user test (browser + API + edge cases). Found: web app bypasses the pipeline/L4/record/human gate and fakes `verified`; drive gearmotor picked for an arm elbow; result screen has no BOM and no simulation; confirm-sentence grammar; unguarded `json.loads`. Data: only one machine is reachable under the placeholder catalog | Pipeline is honest; the app that users touch is not yet wired to it |
 | 2026-08-28 | Acted on the ETE findings: web app rewired onto `pipeline.run()` with the fake `verified` override removed and a labelled `--demo` flag; `ActuatorRole` added as a hard selection filter; unverified-vs-unavailable now reported distinctly. 97 tests. Lost: `runs/` cleared by an overbroad rm | The app users touch is now the pipeline; catalog verification is the only thing standing between it and a quote |
+| 2026-08-28 | `curate.py` added (status / needs / verify / add); repo put under git. Data: the sizing demands a 7-15 Nm joint rung the seed ladder does not have | The human catalog step is now a guided 4-command loop, not a JSON edit |

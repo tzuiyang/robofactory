@@ -66,11 +66,28 @@ one new subclass (Onshape REST, or a headless kernel like CadQuery/build123d) �
 - **Price is a range, never a point.** Safety factor is always visible.
 - **The pipeline never reaches a customer** — it stops at `awaiting_human_review`.
 
+## Curating the catalog
+
+The one step a person has to do. `verified` is set by a human who has looked at the
+vendor page and by nobody else — enforced in `catalog/store.py`, and the reason the
+app currently refuses every request.
+
+```bash
+python3 curate.py status        # what the catalog has, what it cannot fill
+python3 curate.py needs         # the torque/speed rungs the sizing actually asks for
+python3 curate.py verify act.small
+python3 curate.py add
+```
+
+`needs` derives the shopping list from the sizing code, not from a guess: it prints
+every joint torque across representative jobs, split by actuator role.
+
 ## What's blocking
 
 Both are *content*, not code:
 
-1. **Real catalog parts** (log.md open q #5, #12) — replace PLACEHOLDER entries with team-stocked
-   parts. Needs ~5+ actuator classes or the good/better/best tiers collapse into one.
+1. **Real catalog parts** (log.md open q #5, #12) — replace PLACEHOLDER entries with real
+   purchasable parts. Needs ~5+ actuator classes or the good/better/best tiers collapse into
+   one. Use `curate.py`.
 2. **Archetype templates** (open q #6, #13) — parametric CAD authored by an engineer. The AI
    instantiates them; it does not generate geometry.
