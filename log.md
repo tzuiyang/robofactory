@@ -568,6 +568,25 @@ the app. Offered whether or not the parts are verified — it is a model, not a 
 **Confidence:** high on structure and on the numbers coming from the right places; medium that
 it loads clean in Gazebo first try; low on dynamic fidelity, which is stated in the file.
 
+### [2026-08-28] Product name: RoboFactory (provisional)
+**Type:** decision
+**Context:** Naming the customer-facing app. I argued for dropping "robot" — the intake spends
+five questions avoiding robotics vocabulary, so leading with it is at odds with the voice — and
+proposed `Rig`. The team kept "robot" deliberately and chose **RoboFactory**, explicitly "for
+now".
+**Consequence:** Product name is RoboFactory. The repo stays `robotics_streamline` and the
+Python package stays `rstream`; renaming those is churn with no user visible. Applied to the
+page title, the header, the server banner and the README. The strapline changed with it, from
+"Tell us what you need in plain words" to naming the actual deliverable: *"Describe the robot
+you want in plain words. We work out the parts, price them, and hand you something you can
+build."*
+**Flagged, not blocking:** "Factory" carries a manufacturing-at-scale connotation, and the
+2026-08-28 reframe moved this product *away* from industrial framing toward an individual
+designing one machine. The app also does not make anything — it produces a design and a parts
+list. Worth re-testing on a real user before the name hardens; recorded here so the question is
+not re-derived from scratch later.
+**Confidence:** n/a — a naming choice, held provisionally by the team's own framing.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1285,3 +1304,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | Catalog filled with 22 real, linked, orderable parts (still unverified by design). Data: 3k buys 1.0 kg at 0.5 m, not 0.35 m at 0.5 kg; torque not cost is now the binding limit; the 9-48 Nm gap costs ~500 USD on every arm and is why tiers collapse | The catalog is real; only human verification stands between the app and a quote |
 | 2026-08-28 | Result screen renders the orderable parts list: qty, plain-English role, manufacturer, part number, price and a link to buy it. Unverified prices flagged `?`, subtotal withheld. 105 tests | The app finally hands a person the thing the product is for |
 | 2026-08-28 | URDF export built (`export/urdf.py` + module `Frame`s + download in the app). Joint effort/velocity limits come from the selected catalog actuators. 120 tests. Not yet loaded in a real simulator | Simulation is unblocked without waiting on the Fusion templates |
+| 2026-08-28 | Product named **RoboFactory** (provisional). Repo and package unchanged. Strapline now names the deliverable | The app has a name |

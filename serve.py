@@ -1,4 +1,4 @@
-"""Local web app for the guided intake. No dependencies — stdlib only.
+"""RoboFactory — local web app for the guided intake. No dependencies, stdlib only.
 
     python3 serve.py                 # http://localhost:8000
     python3 serve.py 8000 --demo     # same, but placeholder parts are allowed
@@ -305,7 +305,7 @@ def main() -> int:
     port = int(args[0]) if args else 8000
 
     stats = CATALOG.stats()
-    print(f"  robotics_streamline  ->  http://localhost:{port}")
+    print(f"  RoboFactory  ->  http://localhost:{port}")
     print(f"  catalog: {stats['total']} parts, {stats['verified']} verified")
     if DEMO_MODE:
         print("  DEMO MODE: unverified parts allowed. Prices are unconfirmed.")

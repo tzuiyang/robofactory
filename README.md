@@ -1,4 +1,7 @@
-# robotics_streamline
+# RoboFactory
+
+*(repo and Python package remain `robotics_streamline` / `rstream`; `RoboFactory` is the
+customer-facing product name, chosen 2026-08-28 — see `log.md`.)*
 
 Task description in → **BOM + concept simulation** out. A human robotics team builds it.
 
