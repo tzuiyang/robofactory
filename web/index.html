@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design a robot</title>
+<style>
+:root{
+  --bg:#faf9f7; --card:#ffffff; --ink:#1a1815; --muted:#6b6560;
+  --line:#e5e0d8; --accent:#b4491f; --accent-soft:#fdf2ed;
+  --ok:#2d6a4f; --warn:#8a6d1f;
+  --radius:14px;
+  --font:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16151a; --card:#1f1e24; --ink:#f0ede8; --muted:#9d968e;
+    --line:#33313a; --accent:#e8825a; --accent-soft:#2a2027;
+    --ok:#7fc4a3; --warn:#d4b464;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:17px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:680px; margin:0 auto; padding:32px 20px 80px}
+header{padding:12px 0 28px}
+.logo{font-family:var(--font); font-size:20px; letter-spacing:-.01em}
+.logo b{color:var(--accent); font-weight:600}
+.sub{color:var(--muted); font-size:14px; margin-top:2px}
+
+.card{
+  background:var(--card); border:1px solid var(--line);
+  border-radius:var(--radius); padding:28px 26px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px -16px rgba(0,0,0,.18);
+}
+.q{font-family:var(--font); font-size:25px; line-height:1.3; letter-spacing:-.015em; margin:0 0 6px}
+.why{color:var(--muted); font-size:14.5px; margin:0 0 22px}
+
+.opts{display:flex; flex-direction:column; gap:9px; margin-bottom:18px}
+button.opt{
+  font:inherit; text-align:left; cursor:pointer;
+  background:var(--card); color:var(--ink);
+  border:1px solid var(--line); border-radius:10px;
+  padding:13px 16px; transition:.13s ease;
+}
+button.opt:hover{border-color:var(--accent); background:var(--accent-soft)}
+button.opt:active{transform:translateY(1px)}
+
+.free{display:flex; gap:9px; margin-top:4px}
+input[type=text]{
+  flex:1; font:inherit; padding:13px 15px; border-radius:10px;
+  border:1px solid var(--line); background:var(--bg); color:var(--ink);
+}
+input[type=text]:focus{outline:none; border-color:var(--accent)}
+button.go{
+  font:inherit; font-weight:600; cursor:pointer; padding:13px 22px;
+  border:none; border-radius:10px; background:var(--accent); color:#fff;
+}
+button.go:hover{filter:brightness(1.08)}
+
+.dots{display:flex; gap:6px; margin:0 0 22px}
+.dot{width:22px; height:3px; border-radius:2px; background:var(--line)}
+.dot.on{background:var(--accent)}
+
+h2.res{font-family:var(--font); font-size:27px; letter-spacing:-.02em; margin:0 0 4px}
+.lede{font-size:19px; line-height:1.45; margin:0 0 26px}
+.sec{margin:26px 0 0}
+.sec h3{
+  font-size:12px; text-transform:uppercase; letter-spacing:.09em;
+  color:var(--muted); font-weight:600; margin:0 0 10px;
+}
+ul{margin:0; padding-left:20px}
+li{margin:5px 0}
+.stat{
+  display:flex; gap:12px; align-items:flex-start;
+  padding:14px 16px; border-radius:10px; background:var(--accent-soft);
+  border:1px solid var(--line); margin-bottom:9px;
+}
+.stat .ico{font-size:19px; line-height:1.3}
+.note{
+  border-left:3px solid var(--warn); padding:2px 0 2px 14px;
+  color:var(--muted); font-size:14.5px; margin:6px 0;
+}
+.caveats{font-size:14.5px; color:var(--muted); margin-top:26px;
+  padding-top:18px; border-top:1px solid var(--line)}
+.caveats li{margin:6px 0}
+
+details.eng{margin-top:26px}
+details.eng summary{
+  cursor:pointer; font-size:13px; color:var(--muted);
+  letter-spacing:.03em; text-transform:uppercase; font-weight:600;
+}
+pre{
+  background:var(--bg); border:1px solid var(--line); border-radius:10px;
+  padding:14px; overflow-x:auto; font-size:12.5px; line-height:1.5;
+  margin-top:12px; color:var(--muted);
+}
+.again{margin-top:26px; text-align:center}
+.again button{
+  font:inherit; background:none; border:none; cursor:pointer;
+  color:var(--accent); text-decoration:underline; padding:8px;
+}
+.err{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">Design a <b>robot</b></div>
+    <div class="sub">Tell us what you need in plain words. No technical knowledge required.</div>
+  </header>
+  <div id="app" class="card"><p class="why">Starting…</p></div>
+</div>
+
+<script>
+const app = document.getElementById('app');
+let session = null, step = 0;
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function post(url, body){
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
+                             body:JSON.stringify(body||{})});
+  return r.json();
+}
+
+function dots(n){
+  let h = '<div class="dots">';
+  for(let i=0;i<5;i++) h += `<div class="dot${i<n?' on':''}"></div>`;
+  return h + '</div>';
+}
+
+function renderQuestion(q){
+  step++;
+  let h = dots(step);
+  h += `<h1 class="q">${esc(q.text).replace(/\n/g,'<br>')}</h1>`;
+  if(q.why) h += `<p class="why">${esc(q.why)}</p>`;
+  if(q.options && q.options.length){
+    h += '<div class="opts">';
+    q.options.forEach(o => h += `<button class="opt" data-v="${esc(o)}">${esc(o)}</button>`);
+    h += '</div>';
+  }
+  h += `<div class="free">
+          <input type="text" id="free" placeholder="${q.options.length?'Or describe it yourself…':'Type your answer…'}" autocomplete="off">
+          <button class="go" id="send">Next</button>
+        </div>`;
+  app.innerHTML = h;
+
+  app.querySelectorAll('.opt').forEach(b =>
+    b.onclick = () => answer(q.key, b.dataset.v));
+  const input = document.getElementById('free');
+  const send = () => { if(input.value.trim()) answer(q.key, input.value.trim()); };
+  document.getElementById('send').onclick = send;
+  input.onkeydown = e => { if(e.key === 'Enter') send(); };
+  if(!q.options.length) input.focus();
+}
+
+function renderResult(r){
+  if(!r.ok){
+    app.innerHTML = `<h2 class="res">Not quite buildable</h2>
+      <p class="lede">${esc(r.message)}</p>
+      <div class="again"><button onclick="start()">Start over</button></div>`;
+    return;
+  }
+  let h = `<h2 class="res">Here's what we'd build</h2>
+           <p class="lede">${esc(r.machine)}</p>`;
+
+  if(r.speed) h += `<div class="stat"><span class="ico">⏱</span><div>${esc(r.speed)}</div></div>`;
+  if(r.price) h += `<div class="stat"><span class="ico">◆</span><div>${esc(r.price)}</div></div>`;
+
+  if(r.abilities && r.abilities.length){
+    h += `<div class="sec"><h3>What it can do</h3><ul>`;
+    r.abilities.forEach(a => h += `<li>${esc(a)}</li>`);
+    h += `</ul></div>`;
+  }
+  if(r.parts && r.parts.length){
+    h += `<div class="sec"><h3>What it's made of</h3><ul>`;
+    r.parts.forEach(p => h += `<li>${esc(p)}</li>`);
+    h += `</ul></div>`;
+  }
+  if(r.gaps && r.gaps.length){
+    h += `<div class="sec"><h3>Needs sourcing</h3>`;
+    h += `<div class="note">Some parts for this aren't in our standard stock yet.
+          We can source them — it adds to the lead time.</div></div>`;
+  }
+  if(r.caveats){
+    h += `<div class="caveats"><ul>`;
+    r.caveats.forEach(c => h += `<li>${esc(c)}</li>`);
+    h += `</ul></div>`;
+  }
+
+  const i = r.internal || {};
+  h += `<details class="eng"><summary>Engineering detail</summary><pre>${esc(
+`payload        ${i.payload_kg} kg
+reach          ${i.reach_m} m
+degrees of fr. ${i.dof}
+joint torque   ${i.torque_nm} Nm at the governing joint  (safety factor ${i.safety_factor}x)
+
+load path      (each joint sized at its own load, not the worst one)
+${(i.joint_loads||[]).map(j => '  ' + j.label.padEnd(13) + j.basis.padEnd(11) + 'arm/r ' + j.arm_m + ' m   carries ' + j.distal_kg + ' kg   x' + j.motors + '   ' + (j.required_nm === null ? 'NOT MODELLED' : j.required_nm + ' Nm')).join('\n') || '  —'}
+
+actuators chosen
+${(i.actuators||[]).map(a => '  ' + a.part.padEnd(14) + a.rated_nm + ' Nm rated   -> ' + (a.joints.length ? a.joints.join(', ') : 'all joints')).join('\n') || '  —'}
+
+topology
+${i.tree || '—'}
+
+assumptions
+${(i.assumptions||[]).map(a => '  - ' + a).join('\n')}
+
+CAD templates not yet authored
+${(i.unauthored_modules||[]).map(m => '  - ' + m).join('\n') || '  none'}`)}</pre></details>`;
+
+  h += `<div class="again"><button onclick="start()">Design another</button></div>`;
+  app.innerHTML = h;
+}
+
+function handle(r){
+  if(r.error){ app.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
+  if(r.done) renderResult(r); else renderQuestion(r);
+}
+
+async function answer(key, value){
+  app.innerHTML = '<p class="why">Thinking…</p>';
+  handle(await post('/api/answer', {session, key, value}));
+}
+
+async function start(){
+  step = 0;
+  app.innerHTML = '<p class="why">Starting…</p>';
+  const r = await post('/api/start');
+  session = r.session;
+  handle(r);
+}
+
+start();
+</script>
+</body>
+</html>
