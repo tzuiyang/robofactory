@@ -80,7 +80,19 @@ def result_payload(g: GuidedIntake) -> dict:
     # A design that did not clear the gate does not get a price. Reporting the
     # blocker in plain language is the honest answer; a number here would be a
     # quote for a machine no check has passed.
-    if rec.outcome is not Outcome.AWAITING_REVIEW:
+    #
+    # The one exception is the design whose *only* failure is that nobody has
+    # verified the parts. "Unverified parts cannot be quoted" is a rule about the
+    # price, not about the design — the machine, its parts and its cycle time are
+    # all still true. Withholding the number and showing the rest is both honest
+    # and the more useful answer; blanking the whole screen taught the person
+    # nothing and read as "we can't build this", which was false.
+    failures = [c for c in rec.checks if c["status"] == "fail"]
+    only_unpriceable = bool(failures) and all(
+        c["name"] == "catalog_verified" for c in failures)
+    priced = rec.outcome is Outcome.AWAITING_REVIEW
+
+    if not priced and not only_unpriceable:
         return {"done": True, "ok": False,
                 "message": plain_failure(result.blocked_on[0] if result.blocked_on else ""),
                 "summary": g.summary(), "record_id": rec.id,
@@ -89,9 +101,16 @@ def result_payload(g: GuidedIntake) -> dict:
                 "demo_mode": DEMO_MODE}
 
     caveats = caveat_lines()
+    price_withheld = None
+    if not priced:
+        price_withheld = (
+            "We can't put a price on this yet. The parts behind it haven't been "
+            "checked against a supplier, and we won't quote a number we can't stand "
+            "behind. The design itself is real."
+        )
     if DEMO_MODE:
-        caveats = ["DEMO MODE: the parts behind this are placeholders and the prices "
-                   "are not real. Nothing here has been checked against a vendor."] + caveats
+        caveats = ["DEMO MODE: this design was built from placeholder parts. Nothing "
+                   "here has been checked against a vendor."] + caveats
 
     return {
         "done": True,
@@ -101,7 +120,8 @@ def result_payload(g: GuidedIntake) -> dict:
         "parts": parts_of_machine(cfg.topology),
         "abilities": what_it_can_do(req),
         "speed": speed_sentence(cfg),
-        "price": price_sentence(cfg, tier) if tier else None,
+        "price": price_sentence(cfg, tier) if (priced and tier) else None,
+        "price_withheld": price_withheld,
         "gaps": cfg.capability_gaps,
         "caveats": caveats,
         "demo_mode": DEMO_MODE,

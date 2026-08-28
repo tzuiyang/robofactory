@@ -104,3 +104,43 @@ def test_customer_view_carries_no_engineering_detail(serve_mod, intake,
     ).lower()
     for word in ("dof", "torque", "nm", "actuator", "kinematic", "revolute"):
         assert word not in customer.split(), f"{word!r} leaked into the customer view"
+
+
+def test_unpriceable_design_is_still_shown(serve_mod, intake, tmp_path, monkeypatch):
+    """"Unverified parts cannot be quoted" is a rule about the price, not the design.
+
+    The machine, its parts and its cycle time are all still true. Blanking the
+    whole screen taught the person nothing and read as "we can't build this",
+    which was false.
+    """
+    monkeypatch.setattr(serve_mod, "DEMO_MODE", True)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    out = serve_mod.result_payload(intake)
+
+    assert out["ok"] is True
+    assert out["machine"] and out["parts"] and out["speed"]
+    assert out["price"] is None, "an unverified BOM must never carry a number"
+    assert out["price_withheld"], "and the screen must say why"
+    assert out["outcome"] == "draft", (
+        "the gate is not weakened — the design simply did not clear it")
+
+    failed = [c["name"] for c in out["internal"]["checks"] if c["status"] == "fail"]
+    assert failed == ["catalog_verified"], (
+        "only the verification failure is tolerated this way; any other failure "
+        f"must still blank the result, got {failed}")
+
+
+def test_a_real_failure_still_blanks_the_result(serve_mod, tmp_path, monkeypatch):
+    """A design that fails something other than verification gets no design screen."""
+    monkeypatch.setattr(serve_mod, "DEMO_MODE", True)
+    monkeypatch.setattr(serve_mod, "RUNS_DIR", tmp_path)
+    g = GuidedIntake()
+    for k, v in [("task", "move engine blocks around a workshop"),
+                 ("object", "something else"), ("weight_refine", "heavier than that"),
+                 ("area", "a garage"), ("budget", "under $3,000"),
+                 ("confirm", "yes, that's right")]:
+        g.answer(k, v)
+    out = serve_mod.result_payload(g)
+    assert out["ok"] is False
+    assert "price" not in out or out["price"] is None
+    assert out["message"]

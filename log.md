@@ -424,6 +424,24 @@ were sitting untracked.
 **Confidence:** high for the rungs (derived, not estimated); the missing 7-15 Nm band is the
 concrete reason tiers collapse.
 
+### [2026-08-28] A blocked quote is not a blocked design
+**Type:** breakthrough
+**Context:** After rewiring the app onto the pipeline, `--demo` still showed "Not quite
+buildable" and nothing else — the L4 `catalog_verified` check fails on placeholder parts, so
+the whole result screen was blanked. I had told the team `--demo` would walk the flow end to
+end; it did not.
+**Finding:** "Unverified parts cannot be quoted" is a rule about the **price**, not about the
+design. The machine, its part list, its cycle time and its whole engineering view are all
+still true when nobody has checked a supplier. Blanking the screen taught the user nothing and
+read as "we can't build this", which was false and is the opposite of the honest failure this
+project wants.
+**Consequence:** When `catalog_verified` is the *only* failing check, the app now renders the
+full design with the price withheld and a line saying why. Any other failure still blanks the
+result. The gate is untouched: outcome stays `draft`, the check still reports FAIL, and the
+record says so. Styled deliberately unlike a price so it cannot be misread as one.
+**Confidence:** high — 99 tests, two of them pinning that only the verification failure gets
+this treatment.
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1136,3 +1154,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | First end-to-end user test (browser + API + edge cases). Found: web app bypasses the pipeline/L4/record/human gate and fakes `verified`; drive gearmotor picked for an arm elbow; result screen has no BOM and no simulation; confirm-sentence grammar; unguarded `json.loads`. Data: only one machine is reachable under the placeholder catalog | Pipeline is honest; the app that users touch is not yet wired to it |
 | 2026-08-28 | Acted on the ETE findings: web app rewired onto `pipeline.run()` with the fake `verified` override removed and a labelled `--demo` flag; `ActuatorRole` added as a hard selection filter; unverified-vs-unavailable now reported distinctly. 97 tests. Lost: `runs/` cleared by an overbroad rm | The app users touch is now the pipeline; catalog verification is the only thing standing between it and a quote |
 | 2026-08-28 | `curate.py` added (status / needs / verify / add); repo put under git. Data: the sizing demands a 7-15 Nm joint rung the seed ladder does not have | The human catalog step is now a guided 4-command loop, not a JSON edit |
+| 2026-08-28 | Fixed: `--demo` blanked the whole result screen. A design whose only failing check is `catalog_verified` now renders in full with the price withheld. 99 tests | The flow can finally be walked end to end without faking verification |

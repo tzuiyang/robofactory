@@ -81,6 +81,9 @@ li{margin:5px 0}
   border:1px solid var(--line); margin-bottom:9px;
 }
 .stat .ico{font-size:19px; line-height:1.3}
+/* A withheld price is not a price. It must not read like one. */
+.stat.warnstat{background:transparent; border-color:var(--warn); color:var(--muted)}
+.stat.warnstat .ico{color:var(--warn)}
 .note{
   border-left:3px solid var(--warn); padding:2px 0 2px 14px;
   color:var(--muted); font-size:14.5px; margin:6px 0;
@@ -171,6 +174,7 @@ function renderResult(r){
 
   if(r.speed) h += `<div class="stat"><span class="ico">⏱</span><div>${esc(r.speed)}</div></div>`;
   if(r.price) h += `<div class="stat"><span class="ico">◆</span><div>${esc(r.price)}</div></div>`;
+  else if(r.price_withheld) h += `<div class="stat warnstat"><span class="ico">◆</span><div>${esc(r.price_withheld)}</div></div>`;
 
   if(r.abilities && r.abilities.length){
     h += `<div class="sec"><h3>What it can do</h3><ul>`;
