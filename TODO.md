@@ -129,6 +129,9 @@ create. Do not remove it to make a script work.
       `_pick_actuator`, or the extra parts are unreachable.
 - [ ] Link lengths sum to 1.08x the stated reach (0.55 + 0.45 + 0.08 in `topology.py`),
       so the moment arm is ~8% longer than the quoted reach. Decide which is authoritative.
+      **Worse than it looked:** the 0.08 share gives a 28 mm wrist link on a 0.35 m arm,
+      shorter than the 80 mm joint housing that drives it — visible in `docs/img/arm.png`
+      and physically unbuildable. Fix at the topology, not in the URDF exporter.
 - [x] ~~Orderable parts list on the result screen~~ — **done 2026-08-28.** `explain.shopping_list()`
       -> "What to order": qty, plain-English role, manufacturer, part number, price, vendor link.
       Unverified prices carry a `?`; the subtotal is withheld until the parts are verified.

@@ -77,23 +77,41 @@ def _box_inertia(mass: float, size: tuple[float, float, float]) -> tuple[float, 
     return (c * (y * y + z * z), c * (x * x + z * z), c * (x * x + y * y))
 
 
+#: Wheel width, metres. Sets how far outboard of the chassis a wheel sits.
+WHEEL_WIDTH_M = 0.03
+
+
 def _resolved_size(inst) -> tuple[float, float, float]:
     f = inst.module.frame
     size = list(f.size)
     if f.size_param:
         size[f.size_axis] = float(inst.params.get(f.size_param, 0.0))
+    if inst.module.id == "base.diffdrive":
+        # Chassis spans the track minus a wheel either side, so the wheels are
+        # outboard where they can touch the ground. The static 0.24 m width was
+        # wider than a 0.20 m track, which put both wheels inside the body.
+        track = float(inst.params.get("track_width_m", 0.30))
+        size[1] = track - 2 * WHEEL_WIDTH_M
     return tuple(max(v, MIN_EDGE_M) for v in size)
 
 
 def _child_offset(inst) -> tuple[float, float, float]:
     """Where this module's child mounts, in this module's frame."""
     f = inst.module.frame
+    if inst.module.id == "base.diffdrive":
+        # Whatever mounts on a rolling base mounts on top of the chassis, which
+        # is itself a wheel radius off the ground.
+        return (0.0, 0.0, _wheel_radius(inst) + _resolved_size(inst)[2])
     out = list(f.child_at)
     if f.child_param:
         d = float(inst.params.get(f.child_param, 0.0))
         for i, a in enumerate(f.child_along):
             out[i] += d * a
     return tuple(out)
+
+
+def _wheel_radius(inst) -> float:
+    return float(inst.params.get("wheel_dia_m", 0.10)) / 2.0
 
 
 def _centre_of(inst) -> tuple[float, float, float]:
@@ -105,6 +123,12 @@ def _centre_of(inst) -> tuple[float, float, float]:
     """
     f = inst.module.frame
     size = _resolved_size(inst)
+    if inst.module.id == "base.diffdrive":
+        # The chassis rides ON the wheels. Deriving its centre from child_at the
+        # generic way put the box across the axle line, so the wheels rendered
+        # buried inside the body and the robot floated. Depends on wheel_dia, so
+        # it cannot be a static constant on Frame.
+        return (0.0, 0.0, _wheel_radius(inst) + size[2] / 2.0)
     if f.child_param:  # extends along child_along
         return tuple(size[i] / 2.0 * a for i, a in enumerate(f.child_along))
     if f.joint == "fixed" and f.child_at != (0.0, 0.0, 0.0):
@@ -212,12 +236,14 @@ def _expand_diffdrive(inst, actuators, links, joints):
     notes = []
     if part is None:
         notes.append(f"{inst.label}: no drive motor selected — wheel limits are 0")
+    # Axles sit one wheel radius above the ground, which is where the root frame
+    # is. Placing them at z=0 put the axle on the floor and sank the robot.
     for side, sign in (("left", 1.0), ("right", -1.0)):
         name = f"{inst.label}_wheel_{side}"
-        links.append(_Link(name, (dia, 0.03, dia), max(mass, MIN_MASS_KG)))
+        links.append(_Link(name, (dia, WHEEL_WIDTH_M, dia), max(mass, MIN_MASS_KG)))
         joints.append(_Joint(f"{inst.label}_to_{name}", "continuous",
                              inst.label, name,
-                             (0.0, sign * track / 2.0, 0.0),
+                             (0.0, sign * (track / 2.0), dia / 2.0),
                              (0.0, 1.0, 0.0), None, None, effort, vel))
     return links, joints, notes
 

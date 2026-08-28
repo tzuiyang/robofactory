@@ -610,6 +610,36 @@ verified / first real load is still ahead" caveat on the URDF export entry above
 sensibly once simulated — inertias are still uniform-box estimates, which is the next thing to
 distrust.
 
+### [2026-08-28] Looking at the model found two bugs the parser could not
+**Type:** breakthrough
+**Context:** `check_urdf` had passed every topology, so the export was "verified". Then someone
+asked to actually see one. Rendered all three shapes to PNGs with PyBullet, headless.
+**Finding:** A parser checks that the tree is well-formed. It cannot check that the machine is
+assembled the way you meant, and two things were wrong in a way that was obvious in one glance
+and invisible to every test we had:
+1. **The rover's wheels were inside its chassis.** Wheel joints sat at z=0 with the chassis box
+   straddling the same height, so the wheels were buried in the body and the robot floated.
+   Axles now sit one wheel radius up, which is where the root frame is.
+2. **The chassis was wider than its own track.** A static 0.24 m body width against a 0.20 m
+   `track_width_m` put both wheels inboard of the body edge. Chassis width is now derived from
+   the track, so the wheels are always outboard where they can touch the ground.
+Both came from `Frame` treating "where the child mounts" and "where the box sits" as the same
+number. For a rolling base they are not, and the derivation cannot be a static constant because
+it depends on `wheel_dia_m`.
+**Still visibly wrong, not fixed:** the arm's joint housings are 80 mm cubes against link
+lengths of 192 / 157 / **28** mm. The third link is shorter than the joint that drives it — it
+cannot physically exist. That is the 0.55/0.45/0.08 reach split in `topology.py` (an existing
+TODO item) meeting a real joint size for the first time. Worth fixing at the topology, not in
+the exporter.
+**Consequence:** `tools/render.py` (headless PNG, links coloured by role) and `tools/view.py`
+(interactive, a slider per joint) added as optional dev tools — PyBullet only, never a package
+dependency. Stills committed to `docs/img/` and shown in the README.
+**The lesson, which is the reusable part:** a green validation suite told us the export was
+verified. It was well-formed and wrong. This is the same argument as the L4b vision gate —
+never ask a vision model to judge what a query can measure, but *do* look at the thing for the
+class of error no query is written for.
+**Confidence:** high on both fixes (checked against the joint origins, not the render).
+
 ## 3. Breakthroughs / core architectural decisions
 
 ### [2026-08-25] Instantiate parametric archetypes — do not generate CAD
@@ -1329,3 +1359,4 @@ layer. CAD-side: Zoo/KittyCAD text-to-CAD, PhysicsX, nTop, and Autodesk's own ro
 | 2026-08-28 | URDF export built (`export/urdf.py` + module `Frame`s + download in the app). Joint effort/velocity limits come from the selected catalog actuators. 120 tests. Not yet loaded in a real simulator | Simulation is unblocked without waiting on the Fusion templates |
 | 2026-08-28 | Product named **RoboFactory** (provisional). Repo and package unchanged. Strapline now names the deliverable | The app has a name |
 | 2026-08-28 | `check_urdf` accepts all four topology shapes first try; validation wired into the suite as skip-if-absent tests. 123 tests | The URDF export is verified, not just self-checked |
+| 2026-08-28 | Rendered the URDFs and looked at them. Found+fixed: rover wheels buried in the chassis, chassis wider than its track. Found not fixed: the 28 mm wrist link is shorter than the 80 mm joint driving it. `tools/render.py` + `tools/view.py` added | A parser proves well-formed, not correct — looking is a separate check |

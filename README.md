@@ -29,6 +29,21 @@ real.
 
 No dependencies. stdlib only.
 
+## What it looks like
+
+| bench arm | rover |
+|---|---|
+| ![](docs/img/arm.png) | ![](docs/img/rover.png) |
+
+Generated URDF, rendered headless. Boxes on purpose: a box of the right size and
+mass is honest, a mesh we do not have would not be.
+
+```bash
+python3 tools/view.py            # interactive, joint sliders  (needs pybullet)
+python3 tools/render.py docs/img # stills
+check_urdf runs/<id>.urdf        # the parser Gazebo uses      (brew install urdfdom)
+```
+
 ## Layers
 
 ```
